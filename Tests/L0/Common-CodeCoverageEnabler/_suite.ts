@@ -3,18 +3,11 @@
 /// <reference path="../../../definitions/Q.d.ts"/>
 import Q = require('q');
 import assert = require('assert');
-import mockHelper = require('../../lib/mockHelper');
+var mockHelper = require('../../lib/mockHelper');
 import path = require('path');
 import fs = require('fs');
-import tl = require('../../lib/vsts-task-lib/toolRunner');
-
-// Paths aren't the same between compile time and run time. This will need some work
-let realrequire = require;
-function myrequire(module: string): any {
-    return realrequire(path.join(__dirname, "../../../Tasks/Ant/node_modules", module));
-}
-require = <typeof require>myrequire;
-import { CodeCoverageEnablerFactory } from 'codecoverage-tools/codecoveragefactory';
+var tl = require('../../lib/vsts-task-lib/toolRunner');
+var ccf = require('../../../Tasks/Common/codecoverage-tools/codecoveragefactory');
 let xml2js = require('xml2js'); 
 
 function setResponseFile(name: string) {
@@ -47,7 +40,7 @@ describe('Code Coverage enable tool tests', function () {
         let buildFile = path.join(data, "single_module_pom.xml");
         buildProps['buildfile'] = buildFile;
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("maven", "jacoco");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("maven", "jacoco");
         ccEnabler.enableCodeCoverage(buildProps).then(function () {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(content.indexOf(`<include>**/com/abc.class</include>`), -1, "Include filter must be present");
@@ -63,7 +56,7 @@ describe('Code Coverage enable tool tests', function () {
         let buildFile = path.join(data, "multi_module_pom.xml");
         buildProps['buildfile'] = buildFile;
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("maven", "jacoco");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("maven", "jacoco");
         ccEnabler.enableCodeCoverage(buildProps).then(function (resp) {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(content.indexOf(`<include>**/com/abc.class</include>`), -1, "Include filter must be present");
@@ -79,7 +72,7 @@ describe('Code Coverage enable tool tests', function () {
         let buildFile = path.join(data, "single_module_pom.xml");
         buildProps['buildfile'] = buildFile;
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("maven", "cobertura");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("maven", "cobertura");
         ccEnabler.enableCodeCoverage(buildProps).then(function (resp) {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(content.indexOf(`<include>com/abc.class</include>`), -1, "Include filter must be present");
@@ -95,7 +88,7 @@ describe('Code Coverage enable tool tests', function () {
         let buildFile = path.join(data, "pom_with_reporting_plugins.xml");
         buildProps['buildfile'] = buildFile;
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("maven", "cobertura");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("maven", "cobertura");
         ccEnabler.enableCodeCoverage(buildProps).then(function (resp) {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(content.indexOf(`<include>com/abc.class</include>`), -1, "Include filter must be present");
@@ -114,7 +107,7 @@ describe('Code Coverage enable tool tests', function () {
         let buildFile = path.join(data, "multi_module_pom.xml");
         buildProps['buildfile'] = buildFile;
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("maven", "cobertura");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("maven", "cobertura");
         ccEnabler.enableCodeCoverage(buildProps).then(function (resp) {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(content.indexOf(`<include>com/abc.class</include>`), -1, "Include filter must be present");
@@ -131,7 +124,7 @@ describe('Code Coverage enable tool tests', function () {
         let buildFile = path.join(data, "single_module_build.gradle");
         buildProps['buildfile'] = buildFile;
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("gradle", "jacoco");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("gradle", "jacoco");
         ccEnabler.enableCodeCoverage(buildProps).then(function (resp) {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(content.indexOf(`def jacocoIncludes = ['com/abc.class']`), -1, "Include filter must be present");
@@ -149,7 +142,7 @@ describe('Code Coverage enable tool tests', function () {
         buildProps['buildfile'] = buildFile;
         buildProps['ismultimodule'] = "true";
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("gradle", "jacoco");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("gradle", "jacoco");
         ccEnabler.enableCodeCoverage(buildProps).then(function (resp) {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(content.indexOf(`def jacocoExcludes = ['com/xyz.class']`), -1, "Include filter must be present");
@@ -165,7 +158,7 @@ describe('Code Coverage enable tool tests', function () {
         let buildFile = path.join(data, "single_module_build.gradle");
         buildProps['buildfile'] = buildFile;
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("gradle", "cobertura");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("gradle", "cobertura");
         ccEnabler.enableCodeCoverage(buildProps).then(function (resp) {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(content.indexOf(`cobertura.coverageIncludes = ['.*com.abc']`), -1, "Include filter must be present");
@@ -182,7 +175,7 @@ describe('Code Coverage enable tool tests', function () {
         buildProps['buildfile'] = buildFile;
         buildProps['ismultimodule'] = "true";
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("gradle", "cobertura");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("gradle", "cobertura");
         ccEnabler.enableCodeCoverage(buildProps).then(function (resp) {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(content.indexOf(`cobertura.coverageIncludes = ['.*com.abc']`), -1, "Include filter must be present");
@@ -199,7 +192,7 @@ describe('Code Coverage enable tool tests', function () {
         let buildFile = path.join(data, "ant_build.xml");
         buildProps['buildfile'] = buildFile;
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("ant", "jacoco");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("ant", "jacoco");
         ccEnabler.enableCodeCoverage(buildProps).then(function (resp) {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(content.indexOf(`excludes="**/com/xyz.class"`), -1, "Exclude filter must be present");
@@ -215,7 +208,7 @@ describe('Code Coverage enable tool tests', function () {
         let buildFile = path.join(data, "ant_build.xml");
         buildProps['buildfile'] = buildFile;
 
-        let ccEnabler = new CodeCoverageEnablerFactory().getTool("ant", "cobertura");
+        let ccEnabler = new ccf.CodeCoverageEnablerFactory().getTool("ant", "cobertura");
         ccEnabler.enableCodeCoverage(buildProps).then(function (resp) {
             let content = fs.readFileSync(buildFile, "utf-8");
             assert.notEqual(fs.existsSync(path.join(data, buildProps['reportbuildfile'])), true, "Report file must be present");

@@ -258,35 +258,35 @@ target.test = function() {
 target.testLegacy = function() {
     ensureTool('mocha', '--version');
 
-    // clean tests
-    rm('-Rf', testPath);
-    mkdir('-p', testPath);
+    // // clean tests
+    // rm('-Rf', testPath);
+    // mkdir('-p', testPath);
 
-    // copy the tasks to test folder, delete the included task libs and put mock lib at root
-    console.log('copy tasks');
-    mkdir('-p', testTasksPath);
-    cp('-R', path.join(buildPath, '*'), testTasksPath);
+    // // copy the tasks to test folder, delete the included task libs and put mock lib at root
+    // console.log('copy tasks');
+    // mkdir('-p', testTasksPath);
+    // cp('-R', path.join(buildPath, '*'), testTasksPath);
 
-    util.removeAllFoldersNamed(testTasksPath, 'vsts-task-lib');
+    // util.removeAllFoldersNamed(testTasksPath, 'vsts-task-lib');
 
     // compile tests and test lib
     cd(path.join(__dirname, 'Tests'));
-    run('tsc --outDir ' + testPath);
+    run('tsc --outDir ' + testPath + ' --rootDir ' + path.join(__dirname, 'Tests'));
 
-    // copy the test lib dir
-    cp('-R', path.join(__dirname, 'Tests', 'lib'), testPath + '/');
+    // // copy the test lib dir
+    // cp('-R', path.join(__dirname, 'Tests', 'lib'), testPath + '/');
 
-    // copy other
-    matchCopy('+(data|*.ps1|*.json)', path.join(__dirname, 'Tests', 'L0'), path.join(testPath, 'L0'), { dot: true });
+    // // copy other
+    // matchCopy('+(data|*.ps1|*.json)', path.join(__dirname, 'Tests', 'L0'), path.join(testPath, 'L0'), { dot: true });
 
-    // setup test temp
-    process.env['TASK_TEST_TEMP'] = testTempPath;
-    mkdir('-p', testTempPath);
+    // // setup test temp
+    // process.env['TASK_TEST_TEMP'] = testTempPath;
+    // mkdir('-p', testTempPath);
 
-    // suite path
-    var suitePath = path.join(testPath, options.suite || 'L0/**', '_suite.js');
-    var tfBuild = ('' + process.env['TF_BUILD']).toLowerCase() == 'true';
-    run('mocha ' + suitePath, true);
+    // // suite path
+    // var suitePath = path.join(testPath, options.suite || 'L0/**', '_suite.js');
+    // var tfBuild = ('' + process.env['TF_BUILD']).toLowerCase() == 'true';
+    // run('mocha ' + suitePath, true);
 }
 
 target.package = function() {
