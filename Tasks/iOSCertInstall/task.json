@@ -1,0 +1,46 @@
+{
+    "id": "d2eff759-736d-4b7b-8554-7ba0960d49d6",
+    "name": "iOSCertInstall",
+    "friendlyName": "Install iOS certificates",
+    "description": "Install iOS certificates to the default keychain or a temporary keychain.",
+    "helpMarkDown": "",
+    "category": "Build",
+    "visibility": [
+        "Build",
+        "Release"
+    ],
+    "author": "Microsoft Corporation",
+    "version": {
+        "Major": 0,
+        "Minor": 114,
+        "Patch": 0
+    },
+    "demands": [
+        "xcode"
+    ],
+    "instanceNameFormat": "Install iOS certificates matching $(certificates)",
+    "inputs": [
+        {
+            "name": "certificate",
+            "type": "secureFile",
+            "label": "iOS Certificate (.p12)",
+            "defaultValue": "",
+            "required": true,
+            "helpMarkDown": "Install the iOS certificates with name matching the specified value. By default the certificate will be installed into a temporary keychain accessible via the variable `IOS_TEMP_KEYCHAIN` during the build."
+        },
+        {
+            "name": "password",
+            "type": "string",
+            "label": "P12 Password",
+            "defaultValue": "",
+            "required": "true",
+            "helpMarkDown": "Password associated with your iOS certificate."
+        }
+    ],
+    "execution": {
+        "Node": {
+            "target": "ioscertinstall.js",
+            "argumentFormat": ""
+        }
+    }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "d2eff759-736d-4b7b-8554-7ba0960d49d6",
+  "name": "AppleSigning",
+  "friendlyName": "ms-resource:loc.friendlyName",
+  "description": "ms-resource:loc.description",
+  "helpMarkDown": "ms-resource:loc.helpMarkDown",
+  "category": "Build",
+  "visibility": [
+    "Build"
+  ],
+  "author": "Microsoft Corporation",
+  "version": {
+    "Major": 0,
+    "Minor": 0,
+    "Patch": 1
+  },
+  "demands": [
+    "xcode"
+  ],
+  "instanceNameFormat": "ms-resource:loc.instanceNameFormat",
+  "inputs": [
+    {
+      "name": "appleConnection",
+      "type": "connectedService:AppleSigning",
+      "label": "ms-resource:loc.input.label.appleConnection",
+      "defaultValue": "",
+      "required": true,
+      "helpMarkDown": "ms-resource:loc.input.help.appleConnection"
+    }
+  ],
+  "execution": {
+    "Node": {
+      "target": "applesigning.js",
+      "argumentFormat": ""
+    }
+  }
+}

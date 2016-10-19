@@ -1,0 +1,8 @@
+{
+  "loc.friendlyName": "Apple Signing",
+  "loc.helpMarkDown": "",
+  "loc.description": "Install Apple certificates and provisioning profiles",
+  "loc.instanceNameFormat": "Install Apple certificates and provisioning profiles",
+  "loc.input.label.appleConnection": "Apple connection",
+  "loc.input.help.appleConnection": "Select the connection with the Apple certificate (.p12) and provisioning profile files."
+}
