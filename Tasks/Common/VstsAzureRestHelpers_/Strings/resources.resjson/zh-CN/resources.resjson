@@ -1,0 +1,5 @@
+{
+  "loc.messages.AZ_UnsupportedAuthScheme0": "Azure 终结点不支持授权方案“{0}”。",
+  "loc.messages.AZ_BearerTokenFetchFailure": "无法提取租户 ID {0} 的标记。",
+  "loc.messages.AZ_NoValidResourceIdFound": "为订阅 {2} 找不到 ServerName 为 {0}、ServerType 为 {1} 的有效资源。"
+}

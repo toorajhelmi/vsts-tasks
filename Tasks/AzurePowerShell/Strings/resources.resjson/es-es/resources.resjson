@@ -1,8 +1,8 @@
 {
-  "loc.friendlyName": "PowerShell de Azure",
+  "loc.friendlyName": "Azure PowerShell",
   "loc.helpMarkDown": "[Más información](https://go.microsoft.com/fwlink/?LinkID=613749)",
   "loc.description": "Ejecutar un script de PowerShell en un entorno de Azure",
-  "loc.instanceNameFormat": "Script de PowerShell de Azure: $(ScriptPath)",
+  "loc.instanceNameFormat": "Script de Azure PowerShell: $(ScriptPath)",
   "loc.input.label.ConnectedServiceNameSelector": "Tipo de conexión de Azure",
   "loc.input.label.ConnectedServiceName": "Suscripción de Azure clásico",
   "loc.input.help.ConnectedServiceName": "Suscripción de Azure clásico para configurar antes de ejecutar PowerShell",

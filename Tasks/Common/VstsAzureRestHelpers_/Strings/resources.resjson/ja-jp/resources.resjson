@@ -1,0 +1,5 @@
+{
+  "loc.messages.AZ_UnsupportedAuthScheme0": "'{0}' は Azure エンドポイントではサポートされていない認証スキームです。",
+  "loc.messages.AZ_BearerTokenFetchFailure": "テナント ID {0} のトークンをフェッチできません。",
+  "loc.messages.AZ_NoValidResourceIdFound": "サブスクリプション {2} に対して、ServerName : {0}、ServerType : {1} の有効なリソースがありません。"
+}

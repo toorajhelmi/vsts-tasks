@@ -1,0 +1,5 @@
+{
+  "loc.messages.AZ_UnsupportedAuthScheme0": "Nicht unterstütztes Authentifizierungsschema \"{0}\" für den Azure-Endpunkt.",
+  "loc.messages.AZ_BearerTokenFetchFailure": "Das Token für Mandanten-ID {0} konnte nicht abgerufen werden.",
+  "loc.messages.AZ_NoValidResourceIdFound": "Für das Abonnement \"{2}\" wurde keine gültige Ressource von ServerName \"{0}\", ServerType \"{1}\", gefunden."
+}

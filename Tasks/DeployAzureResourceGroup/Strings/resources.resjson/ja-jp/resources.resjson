@@ -1,6 +1,6 @@
 {
   "loc.friendlyName": "Azure リソース グループの配置",
-  "loc.helpMarkDown": "[詳細](https://github.com/Microsoft/vsts-tasks/blob/master/Tasks/DeployAzureResourceGroup/README.md)",
+  "loc.helpMarkDown": "[詳細情報](https://github.com/Microsoft/vsts-tasks/blob/master/Tasks/DeployAzureResourceGroup/README.md)",
   "loc.description": "Azure リソース グループを展開、開始、停止、削除します",
   "loc.instanceNameFormat": "Azure の配置: $(resourceGroupName) 上の $(action) アクション",
   "loc.group.displayName.output": "出力",
@@ -30,7 +30,7 @@
   "loc.input.label.enableDeploymentPrerequisitesForSelect": "配置の前提条件を有効にする",
   "loc.input.help.enableDeploymentPrerequisitesForSelect": "このオプションを有効にすると、自己署名証明書を使って、Windows リモート管理 (WinRM) リスナーをポート 5986 の HTTPS プロトコル経由で構成できます。この構成は Azure コンピューター上で配置操作を実行するために必要です。ターゲットの仮想マシンがロード バランサーでバックアップされている場合は、受信 NAT 規則がターゲット ポート (5986) に対して構成されていることを確認します。",
   "loc.input.label.outputVariable": "リソース グループ",
-  "loc.input.help.outputVariable": "リソース グループの変数の名前を指定します。変数を $(variableName) として使用して、後続のタスクでリソース グループを参照できます (アプリケーションの展開の「ターゲット コンピューターでの PowerShell」タスクなど)。<br>選んだアクションが [作成]、[更新]、または [選択] のいずれかである場合のみ使用でき、既存のリソース グループが選ばれた場合は必須です。",
+  "loc.input.help.outputVariable": "リソース グループの変数の名前を指定します。変数を $(variableName) として使用して、後続のタスクでリソース グループを参照できます (アプリケーションの展開の「ターゲット コンピューターでの PowerShell」タスクなど)。<br>選んだアクションが Create、Update、または Select のいずれかである場合のみ使用でき、既存のリソース グループが選ばれた場合は必須です。",
   "loc.messages.ARG_CreatedResourceGroup": "[Azure リソース マネージャー]リソース グループ '{0}' を作成しました",
   "loc.messages.ARG_StartingMachine": "[Azure リソース マネージャー] コンピューター '{0}' を起動しています",
   "loc.messages.ARG_StartedMachine": "[Azure リソース マネージャー] Azure プロバイダーからコンピューター '{0}' を起動しました",

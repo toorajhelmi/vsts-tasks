@@ -1,11 +1,11 @@
 {
-  "loc.friendlyName": "Bereitstellung der AzureRM-Web-App",
+  "loc.friendlyName": "AzureRM Web App-Bereitstellung",
   "loc.helpMarkDown": "[Weitere Informationen](https://aka.ms/azurermwebdeployreadme)",
   "loc.description": "Webprojekt für AzureRM-Web-App mit Web Deploy bereitstellen",
   "loc.instanceNameFormat": "AzureRM-Web-App bereitstellen: $(WebAppName)",
   "loc.group.displayName.output": "Ausgabe",
   "loc.input.label.ConnectedServiceName": "AzureRM-Abonnement",
-  "loc.input.help.ConnectedServiceName": "Wählen Sie das Azure-Ressourcen-Manager-Abonnement für die Bereitstellung aus.",
+  "loc.input.help.ConnectedServiceName": "Wählen Sie das Azure Resource Manager-Abonnement für die Bereitstellung aus.",
   "loc.input.label.WebAppName": "Web-App-Name",
   "loc.input.help.WebAppName": "Geben Sie den Namen einer vorhandenen AzureRM-Anwendung ein, oder wählen Sie ihn aus.",
   "loc.input.label.DeployToSlotFlag": "In Slot bereitstellen",

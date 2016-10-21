@@ -1,0 +1,5 @@
+{
+  "loc.messages.AZ_UnsupportedAuthScheme0": "Lo schema di autenticazione '{0}' non è supportato per l'endpoint di Azure.",
+  "loc.messages.AZ_BearerTokenFetchFailure": "Non è possibile recuperare il token per l'ID tenant {0}.",
+  "loc.messages.AZ_NoValidResourceIdFound": "Non è stata trovata alcuna risorsa valida con nome server {0} e tipo di server {1} per la sottoscrizione {2}."
+}

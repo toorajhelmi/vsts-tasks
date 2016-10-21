@@ -30,7 +30,7 @@
   "loc.input.label.enableDeploymentPrerequisitesForSelect": "啟用部署必要條件",
   "loc.input.help.enableDeploymentPrerequisitesForSelect": "啟用此選項即可使用自我簽署憑證，透過連接埠 5986 上的 HTTPS 通訊協定來設定 Windows 遠端管理 (WinRM) 接聽程式。必須要有此設定，才能在 Azure 機器上執行部署作業。若目標虛擬機器受 Load Balancer 支援，請確認已設定目標連接埠 (5986) 的輸入 NAT 規則。",
   "loc.input.label.outputVariable": "資源群組",
-  "loc.input.help.outputVariable": "提供資源群組之變數的名稱。您可以 $(variableName) 形式使用變數，以參考後續工作中的資源群組，例如在 PowerShell 中部署應用程式時，參考目標電腦工作。<br>僅當選取「建立」、「更新」或「選取」動作時，此選項才有效，而此選項在選取現有的資源群組時為必要選項。",
+  "loc.input.help.outputVariable": "提供資源群組之變數的名稱。您可將變數作為 $(variableName) 使用，以參考後續工作中的資源群組，例如在 PowerShell 中部署應用程式時，參考目標電腦工作。<br>僅當選取的動作為 Create、Update 或 Select 時，此選項才有效，而此選項在選取現有的資源群組時為必要選項。",
   "loc.messages.ARG_CreatedResourceGroup": "[Azure Resource Manager]已建立資源群組 '{0}'",
   "loc.messages.ARG_StartingMachine": "[Azure Resource Manager]正在啟動電腦 '{0}'",
   "loc.messages.ARG_StartedMachine": "[Azure Resource Manager]已從 Azure 提供者啟動電腦 '{0}'",

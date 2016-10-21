@@ -47,8 +47,8 @@
   "loc.input.help.skipCACheck": "Si cette option est sélectionnée, le client ignore la validation permettant de vérifier que le certificat du serveur est signé par une autorité de certification approuvée lors de la connexion via HTTP ou Secure Socket Layer (HTTPS).",
   "loc.input.label.outputStorageUri": "URI du conteneur de stockage",
   "loc.input.help.outputStorageUri": "Attribuez un nom à la variable de l'URI du conteneur de stockage dans lequel les fichiers ont été copiés avec cette tâche. Valide uniquement quand la destination sélectionnée est Azure Blob.",
-  "loc.input.label.outputStorageContainerSasToken": "Jeton SAS du conteneur de stockage",
-  "loc.input.help.outputStorageContainerSasToken": "Attribuez un nom à la variable du jeton SAS du conteneur de stockage utilisé pour accéder aux fichiers copiés avec cette tâche. Valide uniquement quand la destination sélectionnée est Azure Blob.",
+  "loc.input.label.outputStorageContainerSasToken": "Jeton SAP du conteneur de stockage",
+  "loc.input.help.outputStorageContainerSasToken": "Attribuez un nom à la variable du jeton SAP du conteneur de stockage utilisé pour accéder aux fichiers copiés avec cette tâche. Valide uniquement quand la destination sélectionnée est Azure Blob.",
   "loc.messages.AFC_StorageAccountNotFound": "Le compte de stockage {0} est introuvable. La connexion sélectionnée 'ServicePrincipal' prend uniquement en charge le compte de stockage de type Azure Resource Manager.",
   "loc.messages.AFC_ResourceGroupNotFound": "Le groupe de ressources indiqué '{0}' n'existe pas.",
   "loc.messages.AFC_GetVMStatus": "[Appel Azure]Obtention de l'état de la machine virtuelle '{0}'",
@@ -86,6 +86,6 @@
   "loc.messages.AFC_SetCustomScriptExtensionFailed": "Échec de la définition de l'extension de script personnalisé '{0}' pour la machine virtuelle '{1}'. Erreur : {2}",
   "loc.messages.AFC_AddNetworkSecurityRuleFailed": "Échec de l'ajout de la règle de sécurité réseau : {0}",
   "loc.messages.AFC_UnableToSetCustomScriptExtension": "Impossible de définir l'extension de script personnalisé '{0}' pour la machine virtuelle '{1}' : {2}",
-  "loc.messages.AFC_CopyPrereqsFailed": "Échec de l'activation des conditions préalables de copie. {0}",
+  "loc.messages.AFC_CopyPrereqsFailed": "Échec de l'activation des prérequis de copie. {0}",
   "loc.messages.AFC_BlobStorageNotFound": "Le compte de stockage {0} est introuvable. Spécifiez un compte de stockage existant"
 }

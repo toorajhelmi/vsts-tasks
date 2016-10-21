@@ -13,7 +13,7 @@
   "loc.input.label.targets": "Cible(s)",
   "loc.input.help.targets": "Liste facultative de cibles à générer, séparées par des espaces. Si rien n'est spécifié, la cible 'default' est utilisée. Si aucune cible 'default' n'est définie, Ant 1.6.0 ou ultérieur génère des tâches qui sont toutes de niveau supérieur.",
   "loc.input.label.publishJUnitResults": "Publier sur TFS/Team Services",
-  "loc.input.help.publishJUnitResults": "Sélectionnez cette option pour publier les résultats des tests JUnit produits par la build Ant sur TFS/Team Services. Chaque fichier de résultats des tests correspondant aux 'Fichiers des résultats des tests' comme série de tests sur TFS/Team Services.",
+  "loc.input.help.publishJUnitResults": "Sélectionnez cette option pour publier les résultats des tests JUnit produits par la build Ant sur TFS/Team Services. Chaque fichier de résultats des tests correspondant aux 'Fichiers des résultats des tests' est publié comme série de tests sur TFS/Team Services.",
   "loc.input.label.testResultsFiles": "Fichiers des résultats des tests",
   "loc.input.help.testResultsFiles": "Chemin des fichiers de résultats des tests. Les caractères génériques sont autorisés. Par exemple, '**/TEST-*.xml' correspond à tous les fichiers XML dont le nom commence par TEST-.",
   "loc.input.label.testRunTitle": "Titre de l'exécution du test",

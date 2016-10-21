@@ -30,7 +30,7 @@
   "loc.input.label.enableDeploymentPrerequisitesForSelect": "启用部署先决条件",
   "loc.input.help.enableDeploymentPrerequisitesForSelect": "使用自签名证书启用此选项将在端口 5986 上配置针对 HTTPS 协议的 Windows 远程管理(WinRM)侦听器。需要此配置才能在 Azure 计算机上执行部署操作。如果目标虚拟机受 Load Balancer 支持，请确保为目标端口(5986)配置了入站 NAT 规则。",
   "loc.input.label.outputVariable": "资源组",
-  "loc.input.help.outputVariable": "为资源组的变量提供一个名称。该变量可用作 $(variableName)，以在后续任务中引用该资源组，例如在目标计算机上的 PowerShell 中部署应用程序的任务。<br>仅当选定的操作为“创建”、“更新”或”选择“时该变量才有效，并且在选中现有资源组时该变量为必需。",
+  "loc.input.help.outputVariable": "为资源组的变量提供一个名称。该变量可用作 $(variableName)，以在后续任务中指示该资源组，例如在目标计算机上 PowerShell 中部署应用程序的任务。<br>仅当选定的操作为 Create、Update 或 Select 时该变量才有效，并且在选择现有资源组时才为必需。",
   "loc.messages.ARG_CreatedResourceGroup": "[Azure Resource Manager]已创建资源组“{0}”",
   "loc.messages.ARG_StartingMachine": "[Azure Resource Manager]正在启动计算机“{0}”",
   "loc.messages.ARG_StartedMachine": "[Azure Resource Manager]已从 Azure 提供程序启动计算机“{0}”",
