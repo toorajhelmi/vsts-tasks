@@ -1,60 +1,26 @@
-// /// <reference path="../../../definitions/mocha.d.ts"/>
-// /// <reference path="../../../definitions/node.d.ts"/>
+import * as mockanswer from 'vsts-task-lib/mock-answer';
+import * as mockrun from 'vsts-task-lib/mock-run';
+import * as fs from 'fs';
+import * as path from 'path';
 
-// import assert = require('assert');
-// import trm = require('../../lib/taskRunner');
-// import psm = require('../../lib/psRunner');
-// import path = require('path');
-// import shell = require('shelljs');
-// import os = require('os');
+let taskPath = path.join(__dirname, '..', 'gulptask.js');
+let taskRunner = new mockrun.TaskMockRunner(taskPath);
+let answersPath = path.join(__dirname, 'npmFails.json');
+let answers: mockanswer.TaskLibAnswers = JSON.parse(fs.readFileSync(answersPath).toString()) as mockanswer.TaskLibAnswers;
+taskRunner.setAnswers(answers);
+taskRunner.setInput('gulpFile', 'gulpfile.js');
+taskRunner.setInput('publishJUnitResults', 'true');
+taskRunner.setInput('testResultsFiles', '**/build/test-results/TEST-*.xml');
+taskRunner.setInput('enableCodeCoverage', 'true');
+taskRunner.setInput('testFramework', 'Mocha');
+taskRunner.setInput('srcFiles', '**/build/src/*.js');
+taskRunner.setInput('testFiles', '**/build/test/*.js');
+if (process.platform == 'win32') {
+    taskRunner.setInput('cwd', 'c:/fake/wd');
+}
+else {
+    taskRunner.setInput('cwd', '/fake/wd');
+}
 
-// function setResponseFile(name: string) {
-// 	process.env['MOCK_RESPONSES'] = path.join(__dirname, name);
-// }
-
-// describe('Gulp Suite', function () {
-//     this.timeout(20000);
-
-// 	before((done) => {
-// 		// init here
-// 		done();
-// 	});
-
-// 	after(function () {
-
-// 	});
-
-// 	it('fails if npm fails', (done) => {
-// 		setResponseFile('npmFails.json');
-
-// 		var tr = new trm.TaskRunner('Gulp');
-// 		tr.setInput('gulpFile', 'gulpfile.js');
-// 		tr.setInput('publishJUnitResults', 'true');
-// 		tr.setInput('testResultsFiles', '**/build/test-results/TEST-*.xml');
-// 		tr.setInput('enableCodeCoverage', 'true');
-// 		tr.setInput('testFramework', 'Mocha');
-// 		tr.setInput('srcFiles', '**/build/src/*.js');
-// 		tr.setInput('testFiles', '**/build/test/*.js');
-// 		if (os.type().match(/^Win/)) {
-// 			tr.setInput('cwd', 'c:/fake/wd');
-// 		}
-// 		else {
-// 			tr.setInput('cwd', '/fake/wd');
-// 		}
-// 		tr.setInput('gulpjs', 'node_modules/gulp/gulp.js');
-// 		tr.run()
-// 			.then(() => {
-// 				assert(tr.invokedToolCount == 2, 'should have exited before running gulp');
-
-// 				// success scripts don't necessarily set a result
-// 				var expectedErr = '/usr/local/bin/npm failed with return code: 1';
-// 				assert(tr.stdErrContained(expectedErr), 'should have said: ' + expectedErr);
-// 				assert(tr.stderr.length > 0, 'should have written to stderr');
-// 				assert(tr.failed, 'task should have failed');
-// 				done();
-// 			})
-// 			.fail((err) => {
-// 				done(err);
-// 			});
-// 	})
-// });
+taskRunner.setInput('gulpjs', 'node_modules/gulp/gulp.js');
+taskRunner.run();

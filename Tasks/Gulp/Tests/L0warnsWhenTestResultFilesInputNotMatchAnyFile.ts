@@ -1,28 +1,26 @@
-// /// <reference path="../../../definitions/mocha.d.ts"/>
-// /// <reference path="../../../definitions/node.d.ts"/>
+import * as mockanswer from 'vsts-task-lib/mock-answer';
+import * as mockrun from 'vsts-task-lib/mock-run';
+import * as fs from 'fs';
+import * as path from 'path';
 
-// import assert = require('assert');
-// import trm = require('../../lib/taskRunner');
-// import psm = require('../../lib/psRunner');
-// import path = require('path');
-// import shell = require('shelljs');
-// import os = require('os');
+let taskPath = path.join(__dirname, '..', 'gulptask.js');
+let taskRunner = new mockrun.TaskMockRunner(taskPath);
+let answersPath = path.join(__dirname, 'gulpGlobalGood.json');
+let answers: mockanswer.TaskLibAnswers = JSON.parse(fs.readFileSync(answersPath).toString()) as mockanswer.TaskLibAnswers;
+taskRunner.setAnswers(answers);
+taskRunner.setInput('gulpFile', 'gulpfile.js');
+taskRunner.setInput('publishJUnitResults', 'true');
+taskRunner.setInput('testResultsFiles', '/nonmatching/input/*');
+taskRunner.setInput('enableCodeCoverage', 'false');
+if (process.platform == 'win32') {
+    taskRunner.setInput('cwd', 'c:/fake/wd');
+}
+else {
+    taskRunner.setInput('cwd', '/fake/wd');
+}
 
-// function setResponseFile(name: string) {
-// 	process.env['MOCK_RESPONSES'] = path.join(__dirname, name);
-// }
-
-// describe('Gulp Suite', function () {
-//     this.timeout(20000);
-
-// 	before((done) => {
-// 		// init here
-// 		done();
-// 	});
-
-// 	after(function () {
-
-// 	});
+taskRunner.setInput('gulpjs', 'node_modules/gulp/gulp.js');
+taskRunner.run();
 
 // 	it('gives warning and runs when test result files input does not match any file', (done) => {
 //         setResponseFile('gulpGlobalGood.json');

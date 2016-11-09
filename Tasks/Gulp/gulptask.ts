@@ -14,6 +14,7 @@ var cwd = tl.getPathInput('cwd', true, false);
 tl.mkdirP(cwd);
 tl.cd(cwd);
 
+var failed = false;
 tl.debug('check path : ' + gulp);
 if (!tl.exist(gulp)) {
 	tl.debug('not found global installed gulp, try to find gulp locally.');
@@ -23,6 +24,7 @@ if (!tl.exist(gulp)) {
 	tl.debug('check path : ' + gulpjs);
 	if (!tl.exist(gulpjs)) {
 		tl.setResult(tl.TaskResult.Failed, tl.loc('GulpNotInstalled', gulpjs));
+		failed = true;
 	}
 	gt.arg(gulpjs);
 }
@@ -57,30 +59,32 @@ gt.arg(tl.getDelimitedInput('targets', ' ', false));
 gt.arg('--gulpfile');
 gt.arg(gulpFile);
 gt.line(tl.getInput('arguments', false));
-gt.exec().then(function (code) {
-	publishTestResults(publishJUnitResults, testResultsFiles);
-	if (isCodeCoverageEnabled) {
-		npm.exec().then(function () {
-			istanbul.exec().then(function (code) {
-				publishCodeCoverage(summaryFile);
-				tl.setResult(tl.TaskResult.Succeeded, tl.loc('GulpReturnCode', code));
+if (!failed) {
+	gt.exec().then(function (code) {
+		publishTestResults(publishJUnitResults, testResultsFiles);
+		if (isCodeCoverageEnabled) {
+			npm.exec().then(function () {
+				istanbul.exec().then(function (code) {
+					publishCodeCoverage(summaryFile);
+					tl.setResult(tl.TaskResult.Succeeded, tl.loc('GulpReturnCode', code));
+				}).fail(function (err) {
+					publishCodeCoverage(summaryFile);
+					tl.debug('taskRunner fail');
+					tl.setResult(tl.TaskResult.Failed, tl.loc('IstanbulFailed', err.message));
+				});
 			}).fail(function (err) {
-				publishCodeCoverage(summaryFile);
 				tl.debug('taskRunner fail');
-				tl.setResult(tl.TaskResult.Failed, tl.loc('IstanbulFailed', err.message));
-			});
-		}).fail(function (err) {
-			tl.debug('taskRunner fail');
-			tl.setResult(tl.TaskResult.Failed, tl.loc('NpmFailed', err.message));
-		})
-	} else {
-		tl.setResult(tl.TaskResult.Succeeded, tl.loc('GulpReturnCode', code));
-	}
-}).fail(function (err) {
-	publishTestResults(publishJUnitResults, testResultsFiles);
-	tl.debug('taskRunner fail');
-	tl.setResult(tl.TaskResult.Failed, tl.loc('GulpFailed', err.message));
-})
+				tl.setResult(tl.TaskResult.Failed, tl.loc('NpmFailed', err.message));
+			})
+		} else {
+			tl.setResult(tl.TaskResult.Succeeded, tl.loc('GulpReturnCode', code));
+		}
+	}).fail(function (err) {
+		publishTestResults(publishJUnitResults, testResultsFiles);
+		tl.debug('taskRunner fail');
+		tl.setResult(tl.TaskResult.Failed, tl.loc('GulpFailed', err.message));
+	})
+}
 
 function publishTestResults(publishJUnitResults, testResultsFiles: string) {
     if (publishJUnitResults) {
