@@ -22,17 +22,6 @@
 
     $configArgs = $configArgs + ("/tfsTeamProjectCollection:{0}" -f $TfsCollection)
 
-    if ($PSBoundParameters.ContainsKey('EnableAutoLogon'))
-    {
-        if (-not $configAsProcess)
-        {
-            throw "EnableAutoLogon option is not valid for configureAsService."
-        }
-
-        $yesno = GetBoolAsYesNo($EnableAutoLogon)
-        $configArgs = $configArgs + ("/enableAutoLogon:{0}" -f $yesno)
-    }
-
     if ($PSBoundParameters.ContainsKey('DisableScreenSaver'))
     {
         if (-not $configAsProcess)
