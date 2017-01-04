@@ -11,14 +11,6 @@ var xml2js = require('xml2js');
 var perf = require("performance-now");
 var process = require('process');
 
-const runSettingsExt = ".runsettings";
-const testSettingsExt = ".testsettings";
-const TIFriendlyName = "Test Impact";
-const TICollectorURI = "datacollector://microsoft/TestImpact/1.0";
-const TITestSettingsAgentNameTag = "testImpact-5d76a195-1e43-4b90-a6ce-4ec3de87ed25";
-const TITestSettingsNameTag = "testSettings-5d76a195-1e43-4b90-a6ce-4ec3de87ed25";
-const TITestSettingsIDTag = "5d76a195-1e43-4b90-a6ce-4ec3de87ed25";
-const TITestSettingsXmlnsTag = "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"
 
 interface ExecutabaleInfo {
     version: number;
