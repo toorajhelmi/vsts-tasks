@@ -1,16 +1,15 @@
-/// <reference path='../../definitions/xml2js.d.ts' />
+/// <reference path="../../definitions/node.d.ts" />
 
 import * as tl from 'vsts-task-lib/task';
 import * as tr from 'vsts-task-lib/toolrunner';
 import * as path from 'path';
 import * as Q from 'q';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as regedit from 'regedit';
-import * as uuid from 'node-uuid';
-import * as xml2js from 'xml2js';
 import * as pref from 'performance-now';
-import * as process from 'process';
+import * as util from './utilities';
+import * as trh from './testresultshelper';
+import {Constants} from './constants';
 
 interface ExecutabaleInfo {
     version: number;
@@ -50,7 +49,6 @@ const fileLevel = tl.getVariable('tia.filelevel');
 const sourcesDir = tl.getVariable('build.sourcesdirectory');
 const useNewCollectorFlag = tl.getVariable('tia.useNewCollector');
 const isPrFlow = tl.getVariable('tia.isPrFlow');
-const vsTestVersionForTIA: number[] = null;
 const ignoreVstestFailure: string = tl.getVariable('vstest.ignoretestfailures');
 const useNewCollector: boolean = useNewCollectorFlag && useNewCollectorFlag.toUpperCase() === 'TRUE';
 const context: string = releaseUri ? 'CD' : 'CI';
@@ -60,52 +58,44 @@ const context: string = releaseUri ? 'CD' : 'CI';
 const runIdFile = path.join(os.tmpdir(), uuid.v1() + '.txt');
 const baseLineBuildIdFile = path.join(os.tmpdir(), uuid.v1() + '.txt');
 const vstestDiagFile = path.join(os.tmpdir(), uuid.v1() + '.txt');
+const disableTIA = tl.getVariable('DisableTestImpactAnalysis');
 
 
 // TODO print all the inputs
 
-
-try {
-    const testAssemblyFiles: string[] = getTestAssemblies(searchFolder, workingDir);
-    if (!testAssemblyFiles || testAssemblyFiles.length === 0) {
-        tl.command('task.issue', {type: 'warning', code: '002004'}, tl.loc('NoMatchingTestAssemblies'));
-        tl.setResult(tl.TaskResult.Succeeded, 'Task Succeeded');
-    }
-
-    if (testAssemblyFiles && testAssemblyFiles.length !== 0) {
-        const workingDirectory = workingDir;
-        getTestResultsDirectory(runSettingsFile, path.join(workingDirectory, 'TestResults')).then(function(resultsDirectory) {
-            invokeVSTest(resultsDirectory)
-                .then(function(code) {
-                    try {
-                        if (!isTiaAllowed()) {
-                            publishTestResults(resultsDirectory);
-                        }
-                        tl.setResult(code, tl.loc('VstestReturnCode', code));
-                        deleteVstestDiagFile();
-                    }
-                    catch (error) {
-                        deleteVstestDiagFile();
-                        tl._writeLine('##vso[task.logissue type=error;code=' + error + ';TaskName=VSTest]');
-                        throw error;
-                    }
-                })
-                .fail(function(err) {
-                    deleteVstestDiagFile();
-                    tl._writeLine('##vso[task.logissue type=error;code=' + err + ';TaskName=VSTest]');
-                    throw err;
-                });
-        });
-    }
-    else {
-        
-    }
+const testAssemblyFiles: string[] = getTestAssemblies(searchFolder, workingDir);
+if (!testAssemblyFiles || testAssemblyFiles.length === 0) {
+    tl.command('task.issue', {type: 'warning', code: '002004'}, tl.loc('NoMatchingTestAssemblies'));
+    tl.setResult(tl.TaskResult.Succeeded, 'Task Succeeded');
+    return;
 }
-catch (error) {
-    deleteVstestDiagFile();
-    tl._writeLine('##vso[task.logissue type=error;code=' + error + ';TaskName=VSTest]');
-    throw error;
-}
+
+// ################ Core functions ########################
+
+
+const testResultsDir = trh.getTestResultsDirectory(runSettingsFile, path.join(workingDir, 'TestResults'));
+
+invokeVSTest(testResultsDir)
+    .then(function(code) {
+        try {
+            if (!isTiaAllowed()) {
+                trh.publishTestResults(resultsDirectory);
+            }
+            tl.setResult(code, tl.loc('VstestReturnCode', code));
+            deleteVstestDiagFile();
+        }
+        catch (error) {
+            deleteVstestDiagFile();
+            tl._writeLine('##vso[task.logissue type=error;code=' + error + ';TaskName=VSTest]');
+            throw error;
+        }
+    })
+    .fail(function(err) {
+        deleteVstestDiagFile();
+        tl._writeLine('##vso[task.logissue type=error;code=' + err + ';TaskName=VSTest]');
+        throw err;
+    });
+
 
 function getTestAssemblies(searchFolder: string, defaultDir: string): string[] {
     if (isNullOrWhitespace(searchFolder)) {
@@ -116,37 +106,7 @@ function getTestAssemblies(searchFolder: string, defaultDir: string): string[] {
     return tl.findMatch(searchFolder, testAssembly);
 }
 
-function getVsTestVersion(): number[] {
-    const vstestLocationEscaped = vstestLocation.replace(/\\/g, '\\\\');
-    const wmicTool = tl.tool('wmic');
-    const wmicArgs = ['datafile', 'where', 'name=''.concat(vstestLocationEscaped, '''), 'get', 'Version', '/Value'];
-    wmicTool.arg(wmicArgs);
-    const output = wmicTool.execSync();
 
-    const verSplitArray = output.stdout.split('=');
-    if (verSplitArray.length !== 2) {
-        tl.warning(tl.loc('ErrorReadingVstestVersion'));
-        return null;
-    }
-
-    const versionArray = verSplitArray[1].split('.');
-    if (versionArray.length !== 4) {
-        tl.warning(tl.loc('UnexpectedVersionString', output.stdout));
-        return null;
-    }
-
-    const vsVersion: number[] = [];
-    vsVersion[0] = parseInt(versionArray[0]);
-    vsVersion[1] = parseInt(versionArray[1]);
-    vsVersion[2] = parseInt(versionArray[2]);
-
-    if (isNaN(vsVersion[0]) || isNaN(vsVersion[1]) || isNaN(vsVersion[2])) {
-        tl.warning(tl.loc('UnexpectedVersionNumber', verSplitArray[1]));
-        return null;
-    }
-
-    return vsVersion;
-}
 
 function getVstestArguments(settingsFile: string, tiaEnabled: boolean): string[] {
     const argsArray: string[] = [];
@@ -206,172 +166,12 @@ function getVstestArguments(settingsFile: string, tiaEnabled: boolean): string[]
 }
 
 function addVstestArgs(argsArray: string[], vstest: any) {
-    argsArray.forEach(function(arr) {
+    argsArray.forEach(function(arr: string) {
         vstest.arg(arr);
     });
 }
 
-function updateResponseFile(argsArray: string[], responseFile: string): Q.Promise<string> {
-    const defer = Q.defer<string>();
-    argsArray.forEach(function(arr, i) {
-        if (!arr.startsWith('/')) {
-            argsArray[i] = '\"' + arr + '\"';
-        }
-    });
-    fs.appendFile(responseFile, os.EOL + argsArray.join(os.EOL), function(err) {
-        if (err) {
-            defer.reject(err);
-        }
-        defer.resolve(responseFile);
-    });
-    return defer.promise;
-}
 
-function getTestSelectorLocation(): string {
-    return path.join(__dirname, 'TestSelector/TestSelector.exe');
-}
-
-function getTraceCollectorUri(): string {
-    return 'file://' + path.join(__dirname, 'TestSelector/Microsoft.VisualStudio.TraceCollector.dll');
-}
-
-function uploadTestResults(testResultsDirectory: string): Q.Promise<string> {
-    const startTime = perf();
-    let endTime;
-    let elapsedTime;
-    const defer = Q.defer<string>();
-    const allFilesInResultsDirectory;
-    let resultFiles;
-    if (!isNullOrWhitespace(testResultsDirectory)) {
-        resultFiles = tl.findMatch(testResultsDirectory, path.join(testResultsDirectory, '*.trx'));
-    }
-
-    const selectortool = tl.tool(getTestSelectorLocation());
-    selectortool.arg('UpdateTestResults');
-    selectortool.arg('/TfsTeamProjectCollection:' + tl.getVariable('System.TeamFoundationCollectionUri'));
-    selectortool.arg('/ProjectId:' + tl.getVariable('System.TeamProject'));
-    selectortool.arg('/buildid:' + tl.getVariable('Build.BuildId'));
-    selectortool.arg('/token:' + tl.getEndpointAuthorizationParameter('SystemVssConnection', 'AccessToken', false));
-
-    if (resultFiles && resultFiles[0]) {
-        selectortool.arg('/ResultFile:' + resultFiles[0]);
-    }
-    selectortool.arg('/runidfile:' + runIdFile);
-    selectortool.arg('/Context:' + context);
-    selectortool.exec()
-        .then(function(code) {
-            endTime = perf();
-            elapsedTime = endTime - startTime;
-            tl._writeLine('##vso[task.logissue type=warning;SubTaskName=UploadTestResults;SubTaskDuration=' + elapsedTime + ']');
-            tl.debug(tl.loc('UploadTestResultsPerfTime', elapsedTime));
-            defer.resolve(String(code));
-        })
-        .fail(function(err) {
-            defer.reject(err);
-        });
-    return defer.promise;
-}
-
-function generateResponseFile(discoveredTests: string): Q.Promise<string> {
-    const startTime = perf();
-    let endTime: number;
-    let elapsedTime: number;
-    const defer = Q.defer<string>();
-    const respFile = path.join(os.tmpdir(), uuid.v1() + '.txt');
-    tl.debug('Response file will be generated at ' + respFile);
-    tl.debug('RunId file will be generated at ' + runIdFile);
-    const selectortool = tl.tool(getTestSelectorLocation());
-    selectortool.arg('GetImpactedtests');
-    selectortool.arg('/TfsTeamProjectCollection:' + tl.getVariable('System.TeamFoundationCollectionUri'));
-    selectortool.arg('/ProjectId:' + tl.getVariable('System.TeamProject'));
-
-    if (context === 'CD') {
-        // Release context. Passing Release Id.
-        selectortool.arg('/buildid:' + tl.getVariable('Release.ReleaseId'));
-        selectortool.arg('/releaseuri:' + tl.getVariable('release.releaseUri'));
-        selectortool.arg('/releaseenvuri:' + tl.getVariable('release.environmentUri'));
-    } else {
-        // Build context. Passing build id.
-        selectortool.arg('/buildid:' + tl.getVariable('Build.BuildId'));
-    }
-
-    selectortool.arg('/token:' + tl.getEndpointAuthorizationParameter('SystemVssConnection', 'AccessToken', false));
-    selectortool.arg('/responsefile:' + respFile);
-    selectortool.arg('/DiscoveredTests:' + discoveredTests);
-    selectortool.arg('/runidfile:' + runIdFile);
-    selectortool.arg('/testruntitle:' + testRunTitle);
-    selectortool.arg('/BaseLineFile:' + baseLineBuildIdFile);
-    selectortool.arg('/platform:' + platform);
-    selectortool.arg('/configuration:' + configuration);
-    selectortool.arg('/Context:' + context);
-
-    selectortool.exec()
-        .then(function(code) {
-            endTime = perf();
-            elapsedTime = endTime - startTime;
-            tl.debug(tl.loc('GenerateResponseFilePerfTime', elapsedTime));
-            defer.resolve(respFile);
-        })
-        .fail(function(err) {
-            defer.reject(err);
-        });
-
-    return defer.promise;
-}
-
-function publishCodeChanges(): Q.Promise<string> {
-    const startTime = perf();
-    let endTime: number;
-    let elapsedTime: number;
-    const defer = Q.defer<string>();
-
-    let newprovider = 'true';
-    if (getTIALevel() === 'method') {
-        newprovider = 'false';
-    }
-
-    const selectortool = tl.tool(getTestSelectorLocation());
-    selectortool.arg('PublishCodeChanges');
-    selectortool.arg('/TfsTeamProjectCollection:' + tl.getVariable('System.TeamFoundationCollectionUri'));
-    selectortool.arg('/ProjectId:' + tl.getVariable('System.TeamProject'));
-
-    if (context === 'CD') {
-        // Release context. Passing Release Id.
-        selectortool.arg('/buildid:' + tl.getVariable('Release.ReleaseId'));
-        selectortool.arg('/Definitionid:' + tl.getVariable('release.DefinitionId'));
-    } else {
-        // Build context. Passing build id.
-        selectortool.arg('/buildid:' + tl.getVariable('Build.BuildId'));
-        selectortool.arg('/Definitionid:' + tl.getVariable('System.DefinitionId'));
-    }
-
-    selectortool.arg('/token:' + tl.getEndpointAuthorizationParameter('SystemVssConnection', 'AccessToken', false));
-    selectortool.arg('/SourcesDir:' + sourcesDir);
-    selectortool.arg('/newprovider:' + newprovider);
-    selectortool.arg('/BaseLineFile:' + baseLineBuildIdFile);
-
-    if (isPrFlow && isPrFlow.toUpperCase() === 'TRUE') {
-        selectortool.arg('/IsPrFlow:' + 'true');
-    }
-
-    if (tiaRebaseLimit) {
-        selectortool.arg('/RebaseLimit:' + tiaRebaseLimit);
-    }
-    selectortool.arg('/Context:' + context);
-
-    selectortool.exec()
-        .then(function(code) {
-            endTime = perf();
-            elapsedTime = endTime - startTime;
-            tl.debug(tl.loc('PublishCodeChangesPerfTime', elapsedTime));
-            defer.resolve(String(code));
-        })
-        .fail(function(err) {
-            defer.reject(err);
-        });
-
-    return defer.promise;
-}
 
 function getVSTestLocation(vsVersion: number): string {
     if (vstestLocationMethod.toLowerCase() === 'version') {
@@ -382,8 +182,8 @@ function getVSTestLocation(vsVersion: number): string {
             return path.join(vsCommon, '..\\IDE\\CommonExtensions\\Microsoft\\TestWindow\\vstest.console.exe');
         }
     } else if (vstestLocationMethod.toLowerCase() === 'location') {
-        if (!pathExistsAsFile(vstestLocation)) {
-            if (pathExistsAsDirectory(vstestLocation)) {
+        if (!util.pathExistsAsFile(vstestLocation)) {
+            if (util.pathExistsAsDirectory(vstestLocation)) {
                 return path.join(vstestLocation, 'vstest.console.exe');
             } else {
                 throw (new Error(tl.loc('PathDoesNotExist', vstestLocation)));
@@ -394,33 +194,16 @@ function getVSTestLocation(vsVersion: number): string {
     }
 }
 
-function executeVstest(testResultsDirectory: string, parallelRunSettingsFile: string, vsVersion: number, argsArray: string[]): Q.Promise<number> {
-    const defer = Q.defer<number>();
+function executeVstest(testResultsDirectory: string, parallelRunSettingsFile: string, vsVersion: number, argsArray: string[]): any {
     const vstest = tl.tool(vstestLocation);
     addVstestArgs(argsArray, vstest);
 
     tl.rmRF(testResultsDirectory, true);
     tl.mkdirP(testResultsDirectory);
     tl.cd(workingDirectory);
+
     const ignoreTestFailures = ignoreVstestFailure && ignoreVstestFailure.toLowerCase() === 'true';
-    vstest.exec(<tr.IExecOptions>{ failOnStdErr: !ignoreTestFailures })
-        .then(function(code) {
-            cleanUp(parallelRunSettingsFile);
-            defer.resolve(code);
-        })
-        .fail(function(err) {
-		    cleanUp(parallelRunSettingsFile);
-            tl.warning(tl.loc('VstestFailed'));
-			if (ignoreTestFailures) {
-				tl.warning(err);
-				defer.resolve(0);
-			}
-			else {
-				tl.error(err);
-				defer.resolve(1);
-			}
-        });
-    return defer.promise;
+    return await vstest.exec(<tr.IExecOptions>{ failOnStdErr: !ignoreTestFailures });
 }
 
 function getVstestTestsList(vsVersion: number): Q.Promise<string> {
@@ -488,24 +271,16 @@ function cleanFiles(responseFile: string, listFile: string): void {
     tl.rmRF(baseLineBuildIdFile, true);
 }
 
-function exitTask(): void {
-    deleteVstestDiagFile();
+function runVsTest(testResultsDirectory: string, settingsFile: string, vsVersion: number): number {
+    return await executeVstest(testResultsDirectory, settingsFile, vsVersion, getVstestArguments(settingsFile, false));
 }
 
-function deleteVstestDiagFile(): void {
-    
-}
-
-function runVStest(testResultsDirectory: string, settingsFile: string, vsVersion: number): Q.Promise<number> {
-    const defer = Q.defer<number>();
-    if (isTiaAllowed()) {
-        publishCodeChanges()
-            .then(function(status) {
-                getVstestTestsList(vsVersion)
-                    .then(function(listFile) {
-                        generateResponseFile(listFile)
-                            .then(function(responseFile) {
-                                if (isEmptyResponseFile(responseFile)) {
+function runVsTestWithTestImpact(testResultsDirectory: string, settingsFile: string, vsVersion: number): Q.Promise<number> {
+    await publishCodeChanges();
+    await getVstestTestsList(vsVersion);
+    await generateResponseFile(listFile);
+    const isEmptyFile: boolean = await isEmptyResponseFile(responseFile);
+    if(isEmptyFile){
                                     tl.debug('Empty response file detected. All tests will be executed.');
                                     executeVstest(testResultsDirectory, settingsFile, vsVersion, getVstestArguments(settingsFile, false))
                                         .then(function(vscode) {
@@ -677,97 +452,41 @@ function runVStest(testResultsDirectory: string, settingsFile: string, vsVersion
                     });
             });
     }
-    else {
-        tl.debug('Non TIA mode of test execution');
-        executeVstest(testResultsDirectory, settingsFile, vsVersion, getVstestArguments(settingsFile, false))
-            .then(function(code) {
-                defer.resolve(code);
-            })
-            .fail(function(code) {
-                defer.resolve(code);
-            });
-    }
-    return defer.promise;
 }
 
-function invokeVSTest(testResultsDirectory: string): Q.Promise<number> {
-    const defer = Q.defer<number>();
+function invokeVSTest(vsTestVersion: string, testResultsDirectory: string): Q.Promise<number> {
     if (vsTestVersion.toLowerCase() === 'latest') {
         vsTestVersion = null;
+        //TODO what sort of logic is this
     }
-    overrideTestRunParametersIfRequired(runSettingsFile)
-        .then(function(overriddenSettingsFile) {
-            locateVSVersion(vsTestVersion)
-                .then(function(vsTestConsoleInfo) {
-                    const vsVersion = vsTestConsoleInfo.version;
-                    vstestLocation = vsTestConsoleInfo.location;
-                    try {
-                        const disableTIA = tl.getVariable('DisableTestImpactAnalysis');
-                        if (disableTIA !== undefined && disableTIA.toLowerCase() === 'true') {
-                            tiaEnabled = false;
-                        }
-                        const sysDebug = tl.getVariable('System.Debug');
-                        if ((sysDebug !== undefined && sysDebug.toLowerCase() === 'true') || tiaEnabled) {
-                            vsTestVersionForTIA = getVsTestVersion();
 
-                            if (tiaEnabled && (vsTestVersionForTIA === null || (vsTestVersionForTIA[0] < 15 || (vsTestVersionForTIA[0] === 15 && vsTestVersionForTIA[1] === 0 && vsTestVersionForTIA[2] < 25727)))) {
-                                tl.warning(tl.loc('VstestTIANotSupported'));
-                                tiaEnabled = false;
-                            }
-                        }
-                    } catch (e) {
-                        tl.error(e.message);
-                        defer.resolve(1);
-                        return defer.promise;
-                    }
-                    setupSettingsFileForTestImpact(vsVersion, overriddenSettingsFile)
-                        .then(function(runSettingswithTestImpact) {
-                            setRunInParallellIfApplicable(vsVersion);
-                            setupRunSettingsFileForParallel(runInParallel, runSettingswithTestImpact)
-                                .then(function(parallelRunSettingsFile) {
-                                    runVStest(testResultsDirectory, parallelRunSettingsFile, vsVersion)
-                                        .then(function(code) {
-                                            defer.resolve(code);
-                                        })
-                                        .fail(function(code) {
-                                            defer.resolve(code);
-                                        });
-                                })
-                                .fail(function(err) {
-                                    tl.error(err);
-                                    defer.resolve(1);
-                                });
-                        })
-                        .fail(function(err) {
-                            tl.error(err);
-                            defer.resolve(1);
-                        });
-                })
-                .fail(function(err) {
-                    tl.error(err);
-                    defer.resolve(1);
-                });
-        })
-        .fail(function(err) {
-            tl.error(err);
-            defer.resolve(1);
-        });
+    const overriddenRunSettingsFile = overrideTestRunParametersIfRequired(runSettingsFile, overrideTestrunParameters);
+    //TODO if nothing found?
+    const vsExecInfo: ExecutabaleInfo = locateVSVersion(vsTestVersion);
+    let tiaEnabled: boolean = false;
+    if (disableTIA !== undefined && disableTIA.toLowerCase() === 'true') {
+        tiaEnabled = false;
+    }
 
-    return defer.promise;
-}
-
-function publishTestResults(testResultsDirectory: string) {
-    if (testResultsDirectory) {
-        const resultFiles = tl.findMatch(testResultsDirectory, path.join(testResultsDirectory, '*.trx'));
-
-        if (resultFiles && resultFiles.length !== 0) {
-            const tp = new tl.TestPublisher('VSTest');
-            tp.publish(resultFiles, 'false', platform, configuration, testRunTitle, publishRunAttachments);
+    if (tiaEnabled) {
+        const vsTestVersionForTIA: number[] = getVsTestVersion();
+        if (vsTestVersionForTIA === null || vsTestVersionForTIA[0] < 15
+            || (vsTestVersionForTIA[0] === 15 && vsTestVersionForTIA[1] === 0 && vsTestVersionForTIA[2] < 25727) {
+            tl.warning(tl.loc('VstestTIANotSupported'));
+            tiaEnabled = false;
         }
-        else {
-            tl._writeLine('##vso[task.logissue type=warning;code=002003;]');
-            tl.warning(tl.loc('NoResultsToPublish'));
-        }
+    }
+
+    const settingsFile = setupSettingsFileForTestImpact(overriddenRunSettingsFile);
+
+    // TODO fix run only in parallel
+    setRunInParallellIfApplicable(vsExecInfo.version);
+    setupRunSettingsFileForParallel(settingsFile);
+    
+    if (tiaEnabled) {
+        runVsTestWithTestImpact(testResultsDirectory, settingsFile, vsExecInfo.version);
+    }else{
+        runVsTest(testResultsDirectory, settingsFile, vsExecInfo.version);
     }
 }
 
@@ -781,75 +500,6 @@ function cleanUp(temporarySettingsFile: string) {
             //ignore. just cleanup.
         }
     }
-}
-
-function overrideTestRunParametersIfRequired(settingsFile: string): Q.Promise<string> {
-    const defer = Q.defer<string>();
-    if (!settingsFile || !pathExistsAsFile(settingsFile) || !overrideTestrunParameters || overrideTestrunParameters.trim().length === 0) {
-        defer.resolve(settingsFile);
-        return defer.promise;
-    }
-
-    overrideTestrunParameters = overrideTestrunParameters.trim();
-    const overrideParameters = {};
-
-    const parameterStrings = overrideTestrunParameters.split(';');
-    parameterStrings.forEach(function(parameterString) {
-        const pair = parameterString.split('=', 2);
-        if (pair.length === 2) {
-            const key = pair[0];
-            const value = pair[1];
-            if (!overrideParameters[key]) {
-                overrideParameters[key] = value;
-            }
-        }
-    });
-
-    readFileContents(runSettingsFile, 'utf-8')
-        .then(function(xmlContents) {
-            const parser = new xml2js.Parser();
-            parser.parseString(xmlContents, function(err, result) {
-                if (err) {
-                    tl.warning(tl.loc('ErrorWhileReadingRunSettings', err));
-                    tl.debug('Error occured while overriding test run parameters. Continuing...');
-                    defer.resolve(settingsFile);
-                    return defer.promise;
-                }
-
-                if (result.RunSettings && result.RunSettings.TestRunParameters && result.RunSettings.TestRunParameters[0] &&
-                    result.RunSettings.TestRunParameters[0].Parameter) {
-                    const parametersArray = result.RunSettings.TestRunParameters[0].Parameter;
-                    parametersArray.forEach(function(parameter) {
-                        const key = parameter.$.name;
-                        if (overrideParameters[key]) {
-                            parameter.$.value = overrideParameters[key];
-                        }
-                    });
-                    tl.debug('Overriding test run parameters.');
-                    const builder = new xml2js.Builder();
-                    const overridedRunSettings = builder.buildObject(result);
-                    saveToFile(overridedRunSettings, runSettingsExt)
-                        .then(function(fileName) {
-                            defer.resolve(fileName);
-                        })
-                        .fail(function(err) {
-                            tl.debug('Error occured while overriding test run parameters. Continuing...');
-                            tl.warning(err);
-                            defer.resolve(settingsFile);
-                        });
-                }
-                else {
-                    tl.debug('No test run parameters found to override.');
-                    defer.resolve(settingsFile);
-                }
-            });
-        })
-        .fail(function(err) {
-            tl.debug('Error occured while overriding test run parameters. Continuing...');
-            tl.warning(err);
-            defer.resolve(settingsFile);
-        });
-    return defer.promise;
 }
 
 function isNugetRestoredAdapterPresent(rootDirectory: string): boolean {
@@ -870,678 +520,9 @@ function isNugetRestoredAdapterPresent(rootDirectory: string): boolean {
     return false;
 }
 
-function getTestResultsDirectory(settingsFile: string, defaultResultsDirectory: string): string {
-    if (!settingsFile || !pathExistsAsFile(settingsFile)) {
-        return defaultResultsDirectory;
-    }
-
-    let settingsFileContent = await readFileContents(runSettingsFile, 'utf-8');
-    let parser = new xml2js.Parser();
-    let xmlContent = parser.parseStringSync(settingsFileContent);
-    if(!xmlContent){
-        tl.warning('Error occured while reading test result directory from run settings. Continuing...');
-        return defaultResultsDirectory;
-    }
 
 
-        if (xmlContexnt.RunSettings && result.RunSettings.RunConfiguration && result.RunSettings.RunConfiguration[0] &&
-            result.RunSettings.RunConfiguration[0].ResultsDirectory && result.RunSettings.RunConfiguration[0].ResultsDirectory[0].length > 0) {
-            let resultDirectory = result.RunSettings.RunConfiguration[0].ResultsDirectory[0];
-            resultDirectory = resultDirectory.trim();
-
-            if (resultDirectory) {
-                // path.resolve will take care if the result directory given in settings files is not absolute.
-                defer.resolve(path.resolve(path.dirname(runSettingsFile), resultDirectory));
-            }
-            }
-
-}
 
 
-function getTIAssemblyQualifiedName(vsVersion: number): String {
-    return 'Microsoft.VisualStudio.TraceCollector.TestImpactDataCollector, Microsoft.VisualStudio.TraceCollector, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a';
-}
-
-function getTestImpactAttributes(vsVersion: number) {
-    return {
-        uri: TICollectorURI,
-        assemblyQualifiedName: getTIAssemblyQualifiedName(vsVersion),
-        friendlyName: TIFriendlyName,
-        codebase: getTraceCollectorUri()
-    };
-}
-
-function getTestImpactAttributesWithoutNewCollector(vsVersion: number) {
-    return {
-        uri: TICollectorURI,
-        assemblyQualifiedName: getTIAssemblyQualifiedName(vsVersion),
-        friendlyName: TIFriendlyName
-    };
-}
-
-function isTestImapctCollectorPresent(dataCollectorArray): Boolean {
-    let found = false;
-    const tiaFriendlyName = TIFriendlyName.toUpperCase();
-    for (const node of dataCollectorArray) {
-        if (node.$.friendlyName && node.$.friendlyName.toUpperCase() === tiaFriendlyName) {
-            tl.debug('Test impact data collector already present, will not add the node.');
-            found = true;
-            break;
-        }
-    }
-    return found;
-}
-
-function pushImpactLevelAndRootPathIfNotFound(dataCollectorArray): void {
-    tl.debug('Checking for ImpactLevel and RootPath nodes in TestImpact collector');
-    const tiaFriendlyName = TIFriendlyName.toUpperCase();
-    const arrayLength = dataCollectorArray.length;
-    for (let i = 0; i < arrayLength; i++) {
-        if (dataCollectorArray[i].$.friendlyName && dataCollectorArray[i].$.friendlyName.toUpperCase() === tiaFriendlyName) {
-            if (!dataCollectorArray[i].Configuration) {
-                dataCollectorArray[i] = { Configuration: {} };
-            }
-            if (dataCollectorArray[i].Configuration.TestImpact && !dataCollectorArray[i].Configuration.RootPath) {
-                if (context && context === 'CD') {
-                    dataCollectorArray[i].Configuration = { RootPath: '' };
-                } else {
-                    dataCollectorArray[i].Configuration = { RootPath: sourcesDir };
-                }
-            } else if (!dataCollectorArray[i].Configuration.TestImpact && dataCollectorArray[i].Configuration.RootPath) {
-                if (getTIALevel() === 'file') {
-                    dataCollectorArray[i].Configuration = { ImpactLevel: getTIALevel(), LogFilePath: 'true' };
-                } else {
-                    dataCollectorArray[i].Configuration = { ImpactLevel: getTIALevel() };
-                }
-            } else if (dataCollectorArray[i].Configuration && !dataCollectorArray[i].Configuration.TestImpact && !dataCollectorArray[i].Configuration.RootPath) {
-                if (context && context === 'CD') {
-                    if (getTIALevel() === 'file') {
-                        dataCollectorArray[i].Configuration = { ImpactLevel: getTIALevel(), LogFilePath: 'true', RootPath: '' };
-                    } else {
-                        dataCollectorArray[i].Configuration = { ImpactLevel: getTIALevel(), RootPath: '' };
-                    }
-                } else {
-                    if (getTIALevel() === 'file') {
-                        dataCollectorArray[i].Configuration = { ImpactLevel: getTIALevel(), LogFilePath: 'true', RootPath: sourcesDir };
-                    } else {
-                        dataCollectorArray[i].Configuration = { ImpactLevel: getTIALevel(), RootPath: sourcesDir };
-                    }
-                }
-            }
-
-            //Adding the codebase attribute to TestImpact collector 
-            tl.debug('Adding codebase attribute to the existing test impact collector');
-            if (useNewCollector) {
-                if (!dataCollectorArray[i].$.codebase) {
-                    dataCollectorArray[i].$.codebase = getTraceCollectorUri();
-                }
-            }
-        }
-    }
-}
-
-function roothPathGenerator(): any {
-    if (context) {
-        if (context === 'CD') {
-            return { ImpactLevel: getTIALevel(), RootPath: '' };
-        } else {
-            return { ImpactLevel: getTIALevel(), RootPath: sourcesDir };
-        }
-    }
-}
-
-function updateRunSettings(result: any, vsVersion: number) {
-    let dataCollectorNode = null;
-    if (!result.RunSettings) {
-        tl.debug('Updating runsettings file from RunSettings node');
-        result.RunSettings = { DataCollectionRunSettings: { DataCollectors: { DataCollector: { Configuration: roothPathGenerator() } } } };
-        dataCollectorNode = result.RunSettings.DataCollectionRunSettings.DataCollectors.DataCollector;
-    }
-    else if (!result.RunSettings.DataCollectionRunSettings) {
-        tl.debug('Updating runsettings file from DataCollectionSettings node');
-        result.RunSettings.DataCollectionRunSettings = { DataCollectors: { DataCollector: { Configuration: roothPathGenerator() } } };
-        dataCollectorNode = result.RunSettings.DataCollectionRunSettings.DataCollectors.DataCollector;
-    }
-    else if (!result.RunSettings.DataCollectionRunSettings[0].DataCollectors) {
-        tl.debug('Updating runsettings file from DataCollectors node');
-        result.RunSettings.DataCollectionRunSettings[0] = { DataCollectors: { DataCollector: { Configuration: roothPathGenerator() } } };
-        dataCollectorNode = result.RunSettings.DataCollectionRunSettings[0].DataCollectors.DataCollector;
-    }
-    else {
-        const dataCollectorArray = result.RunSettings.DataCollectionRunSettings[0].DataCollectors[0].DataCollector;
-        if (!dataCollectorArray) {
-            tl.debug('Updating runsettings file from DataCollector node');
-            result.RunSettings.DataCollectionRunSettings[0] = { DataCollectors: { DataCollector: { Configuration: roothPathGenerator() } } };
-            dataCollectorNode = result.RunSettings.DataCollectionRunSettings[0].DataCollectors.DataCollector;
-        }
-        else {
-            if (!isTestImapctCollectorPresent(dataCollectorArray)) {
-                tl.debug('Updating runsettings file, adding a DataCollector node');
-                dataCollectorArray.push({ Configuration: roothPathGenerator() });
-                dataCollectorNode = dataCollectorArray[dataCollectorArray.length - 1];
-            }
-            else {
-                pushImpactLevelAndRootPathIfNotFound(dataCollectorArray);
-            }
-        }
-    }
-    if (dataCollectorNode) {
-        tl.debug('Setting attributes for test impact data collector');
-        if (useNewCollector) {
-            dataCollectorNode.$ = getTestImpactAttributes(vsVersion);
-        }
-        else {
-            dataCollectorNode.$ = getTestImpactAttributesWithoutNewCollector(vsVersion);
-        }
-    }
-}
-
-function updateRunSettingsFileForTestImpact(vsVersion: number, settingsFile: string, exitErrorMessage: string): Q.Promise<string> {
-    const defer = Q.defer<string>();
-    tl.debug('Adding test impact data collector element to runsettings file provided.');
-    readFileContents(settingsFile, 'utf-8')
-        .then(function(xmlContents) {
-            const parser = new xml2js.Parser();
-            parser.parseString(xmlContents, function(err, result) {
-                if (err) {
-                    tl.warning(tl.loc('ErrorWhileReadingRunSettings', err));
-                    tl.debug(exitErrorMessage);
-                    defer.resolve(settingsFile);
-                    return defer.promise;
-                }
-                if (result.RunSettings === undefined) {
-                    tl.warning(tl.loc('ErrorWhileSettingTestImpactCollectorRunSettings'));
-                    defer.resolve(settingsFile);
-                    return defer.promise;
-                }
-                updateRunSettings(result, vsVersion);
-                writeXmlFile(result, settingsFile, runSettingsExt, exitErrorMessage)
-                    .then(function(filename) {
-                        defer.resolve(filename);
-                        return defer.promise;
-                    });
-            });
-        })
-        .fail(function(err) {
-            tl.warning(err);
-            tl.debug(exitErrorMessage);
-            defer.resolve(settingsFile);
-        });
-    return defer.promise;
-}
-
-function updatTestSettings(result: any, vsVersion: number) {
-    let dataCollectorNode = null;
-    if (!result.TestSettings) {
-        tl.debug('Updating testsettings file from TestSettings node');
-        result.TestSettings = { Execution: { AgentRule: { DataCollectors: { DataCollector: { Configuration: roothPathGenerator() } } } } };
-        result.TestSettings.Execution.AgentRule.$ = { name: TITestSettingsAgentNameTag };
-        result.TestSettings.$ = { name: TITestSettingsNameTag, id: TITestSettingsIDTag, xmlns: TITestSettingsXmlnsTag };
-        dataCollectorNode = result.TestSettings.Execution.AgentRule.DataCollectors.DataCollector;
-    }
-    else if (!result.TestSettings.Execution) {
-        tl.debug('Updating testsettings file from Execution node');
-        result.TestSettings.Execution = { AgentRule: { DataCollectors: { DataCollector: { Configuration: roothPathGenerator() } } } };
-        result.TestSettings.Execution.AgentRule.$ = { name: TITestSettingsAgentNameTag };
-        dataCollectorNode = result.TestSettings.Execution.AgentRule.DataCollectors.DataCollector;
-    }
-    else if (!result.TestSettings.Execution[0].AgentRule) {
-        tl.debug('Updating testsettings file from AgentRule node');
-        result.TestSettings.Execution[0] = { AgentRule: { DataCollectors: { DataCollector: { Configuration: roothPathGenerator() } } } };
-        result.TestSettings.Execution[0].AgentRule.$ = { name: TITestSettingsAgentNameTag };
-        dataCollectorNode = result.TestSettings.Execution[0].AgentRule.DataCollectors.DataCollector;
-    }
-    else if (!result.TestSettings.Execution[0].AgentRule[0].DataCollectors) {
-        tl.debug('Updating testsettings file from DataCollectors node');
-        result.TestSettings.Execution[0].AgentRule[0] = { DataCollectors: { DataCollector: { Configuration: roothPathGenerator() } } };
-        dataCollectorNode = result.TestSettings.Execution[0].AgentRule[0].DataCollectors.DataCollector;
-    }
-    else {
-        const dataCollectorArray = result.TestSettings.Execution[0].AgentRule[0].DataCollectors[0].DataCollector;
-        if (!dataCollectorArray) {
-            tl.debug('Updating testsettings file from DataCollector node');
-            result.TestSettings.Execution[0].AgentRule[0].DataCollectors[0] = { DataCollector: { Configuration: roothPathGenerator() } };
-            dataCollectorNode = result.TestSettings.Execution[0].AgentRule[0].DataCollectors[0].DataCollector;
-        }
-        else {
-            if (!isTestImapctCollectorPresent(dataCollectorArray)) {
-                tl.debug('Updating testsettings file, adding a DataCollector node');
-                dataCollectorArray.push({ Configuration: roothPathGenerator() });
-                dataCollectorNode = dataCollectorArray[dataCollectorArray.length - 1];
-            }
-            else {
-                pushImpactLevelAndRootPathIfNotFound(dataCollectorArray);
-            }
-        }
-    }
-    if (dataCollectorNode) {
-        tl.debug('Setting attributes for test impact data collector');
-        if (useNewCollector) {
-            dataCollectorNode.$ = getTestImpactAttributes(vsVersion);
-        }
-        else {
-            dataCollectorNode.$ = getTestImpactAttributesWithoutNewCollector(vsVersion);
-        }
-    }
-}
-
-function writeXmlFile(result: any, settingsFile: string, fileExt: string, exitErrorMessage: string): Q.Promise<string> {
-    const defer = Q.defer<string>();
-    const builder = new xml2js.Builder();
-    const runSettingsForTestImpact = builder.buildObject(result);
-    saveToFile(runSettingsForTestImpact, fileExt)
-        .then(function(fileName) {
-            cleanUp(settingsFile);
-            defer.resolve(fileName);
-            return defer.promise;
-        })
-        .fail(function(err) {
-            tl.debug(exitErrorMessage);
-            tl.warning(err);
-            defer.resolve(settingsFile);
-        });
-    return defer.promise;
-}
-
-function updateTestSettingsFileForTestImpact(vsVersion: number, settingsFile: string, exitErrorMessage: string): Q.Promise<string> {
-    const defer = Q.defer<string>();
-    tl.debug('Adding test impact data collector element to testsettings file provided.');
-    readFileContents(settingsFile, 'utf-8')
-        .then(function(xmlContents) {
-            const parser = new xml2js.Parser();
-            parser.parseString(xmlContents, function(err, result) {
-                if (err) {
-                    tl.warning(tl.loc('ErrorWhileReadingTestSettings', err));
-                    tl.debug(exitErrorMessage);
-                    defer.resolve(settingsFile);
-                    return defer.promise;
-                }
-                if (result.TestSettings === undefined) {
-                    tl.warning(tl.loc('ErrorWhileSettingTestImpactCollectorTestSettings'));
-                    defer.resolve(settingsFile);
-                    return defer.promise;
-                }
-                updatTestSettings(result, vsVersion);
-                writeXmlFile(result, settingsFile, testSettingsExt, exitErrorMessage)
-                    .then(function(filename) {
-                        defer.resolve(filename);
-                        return defer.promise;
-                    });
-            });
-        })
-        .fail(function(err) {
-            tl.warning(err);
-            tl.debug(exitErrorMessage);
-            defer.resolve(settingsFile);
-        });
-    return defer.promise;
-}
 
 
-function createRunSettingsForTestImpact(vsVersion: number, settingsFile: string, exitErrorMessage: string): Q.Promise<string> {
-    const defer = Q.defer<string>();
-    tl.debug('No settings file provided or the provided settings file does not exist. Creating run settings file for enabling test impact data collector.');
-    let runSettingsForTIA = '<?xml version="1.0" encoding="utf-8"?><RunSettings><DataCollectionRunSettings><DataCollectors>' +
-        '<DataCollector uri="' + TICollectorURI + '" ' +
-        'assemblyQualifiedName="' + getTIAssemblyQualifiedName(vsVersion) + '" ' +
-        'friendlyName="' + TIFriendlyName + '" ';
-
-    if (useNewCollector) {
-        runSettingsForTIA = runSettingsForTIA +
-            'codebase="' + getTraceCollectorUri() + '"';
-    }
-
-    runSettingsForTIA = runSettingsForTIA +
-        ' >' +
-        '<Configuration>' +
-        '<ImpactLevel>' + getTIALevel() + '</ImpactLevel>';
-
-    if (getTIALevel() === 'file') {
-        runSettingsForTIA = runSettingsForTIA +
-            '<LogFilePath>' + 'true' + '</LogFilePath>';
-    }
-
-    runSettingsForTIA = runSettingsForTIA +
-        '<RootPath>' + (context === 'CD' ? '' : sourcesDir) + '</RootPath>' +
-        '</Configuration>' +
-        '</DataCollector>' +
-        '</DataCollectors></DataCollectionRunSettings></RunSettings>';
-    saveToFile(runSettingsForTIA, runSettingsExt)
-        .then(function(fileName) {
-            defer.resolve(fileName);
-            return defer.promise;
-        })
-        .fail(function(err) {
-            tl.debug(exitErrorMessage);
-            tl.warning(err);
-            defer.resolve(settingsFile);
-        });
-    return defer.promise;
-}
-
-function setupSettingsFileForTestImpact(vsVersion: number, settingsFile: string): Q.Promise<string> {
-    const defer = Q.defer<string>();
-    const exitErrorMessage = 'Error occured while setting in test impact data collector. Continuing...';
-    if (isTiaAllowed()) {
-        if (settingsFile && settingsFile.split('.').pop().toLowerCase() === 'testsettings') {
-            updateTestSettingsFileForTestImpact(vsVersion, settingsFile, exitErrorMessage)
-                .then(function(updatedFile) {
-                    defer.resolve(updatedFile);
-                    return defer.promise;
-                });
-        }
-        else if (!settingsFile || settingsFile.split('.').pop().toLowerCase() !== 'runsettings' || !pathExistsAsFile(settingsFile)) {
-            createRunSettingsForTestImpact(vsVersion, settingsFile, exitErrorMessage)
-                .then(function(updatedFile) {
-                    defer.resolve(updatedFile);
-                    return defer.promise;
-                });
-        }
-        else {
-            updateRunSettingsFileForTestImpact(vsVersion, settingsFile, exitErrorMessage)
-                .then(function(updatedFile) {
-                    defer.resolve(updatedFile);
-                    return defer.promise;
-                });
-        }
-    }
-    else {
-        tl.debug('Settings are not sufficient for setting test impact. Not updating the settings file');
-        defer.resolve(settingsFile);
-    }
-    return defer.promise;
-}
-
-function setupRunSettingsFileForParallel(runInParallel: boolean, settingsFile: string): Q.Promise<string> {
-    const defer = Q.defer<string>();
-    const exitErrorMessage = 'Error occured while setting run in parallel. Continuing...';
-    if (runInParallel) {
-        if (settingsFile && settingsFile.split('.').pop().toLowerCase() === 'testsettings') {
-            tl.warning(tl.loc('RunInParallelNotSupported'));
-            defer.resolve(settingsFile);
-            return defer.promise;
-        }
-
-        if (!settingsFile || settingsFile.split('.').pop().toLowerCase() !== 'runsettings' || !pathExistsAsFile(settingsFile)) {
-            tl.debug('No settings file provided or the provided settings file does not exist.');
-            const runSettingsForParallel = '<?xml version="1.0" encoding="utf-8"?><RunSettings><RunConfiguration><MaxCpuCount>0</MaxCpuCount></RunConfiguration></RunSettings>';
-            saveToFile(runSettingsForParallel, runSettingsExt)
-                .then(function(fileName) {
-                    defer.resolve(fileName);
-                    return defer.promise;
-                })
-                .fail(function(err) {
-                    tl.debug(exitErrorMessage);
-                    tl.warning(err);
-                    defer.resolve(settingsFile);
-                });
-        }
-        else {
-            tl.debug('Adding maxcpucount element to runsettings file provided.');
-            readFileContents(settingsFile, 'utf-8')
-                .then(function(xmlContents) {
-                    const parser = new xml2js.Parser();
-                    parser.parseString(xmlContents, function(err, result) {
-                        if (err) {
-                            tl.warning(tl.loc('ErrorWhileReadingRunSettings', err));
-                            tl.debug(exitErrorMessage);
-                            defer.resolve(settingsFile);
-                            return defer.promise;
-                        }
-
-                        if (result.RunSettings === undefined) {
-                            tl.warning(tl.loc('FailedToSetRunInParallel'));
-                            defer.resolve(settingsFile);
-                            return defer.promise;
-                        }
-
-                        if (!result.RunSettings) {
-                            result.RunSettings = { RunConfiguration: { MaxCpuCount: 0 } };
-                        }
-                        else if (!result.RunSettings.RunConfiguration || !result.RunSettings.RunConfiguration[0]) {
-                            result.RunSettings.RunConfiguration = { MaxCpuCount: 0 };
-                        }
-                        else {
-                            const runConfigArray = result.RunSettings.RunConfiguration[0];
-                            runConfigArray.MaxCpuCount = 0;
-                        }
-
-                        const builder = new xml2js.Builder();
-                        const runSettingsForParallel = builder.buildObject(result);
-                        saveToFile(runSettingsForParallel, runSettingsExt)
-                            .then(function(fileName) {
-                                cleanUp(settingsFile);
-                                defer.resolve(fileName);
-                                return defer.promise;
-                            })
-                            .fail(function(err) {
-                                tl.debug(exitErrorMessage);
-                                tl.warning(err);
-                                defer.resolve(settingsFile);
-                            });
-                    });
-                })
-                .fail(function(err) {
-                    tl.warning(err);
-                    tl.debug(exitErrorMessage);
-                    defer.resolve(settingsFile);
-                });
-        }
-    }
-    else {
-        defer.resolve(settingsFile);
-    }
-
-    return defer.promise;
-}
-
-function saveToFile(fileContents: string, extension: string): Q.Promise<string> {
-    const defer = Q.defer<string>();
-    const tempFile = path.join(os.tmpdir(), uuid.v1() + extension);
-    fs.writeFile(tempFile, fileContents, function(err) {
-        if (err) {
-            defer.reject(err);
-        }
-        tl.debug('Temporary runsettings file created at ' + tempFile);
-        defer.resolve(tempFile);
-    });
-    return defer.promise;
-}
-
-function setRunInParallellIfApplicable(vsVersion: number) {
-    if (runInParallel) {
-        if (vstestLocationMethod.toLowerCase() === 'version') {
-            if (!isNaN(vsVersion) && vsVersion >= 14) {
-                if (vsVersion >= 15) { // moved away from taef
-                    return;
-                }
-
-                // in 14.0 taef parellization needed taef enabled
-                const vs14Common: string = tl.getVariable('VS140COMNTools');
-                if (vs14Common && pathExistsAsFile(path.join(vs14Common, '..\\IDE\\CommonExtensions\\Microsoft\\TestWindow\\TE.TestModes.dll'))) {
-                    setRegistryKeyForParallelExecution(vsVersion);
-                    return;
-                }
-            }
-            resetRunInParallel();
-        }
-        else if (vstestLocationMethod.toLowerCase() === 'location') {
-            const vs14Common: string = tl.getVariable('VS140COMNTools');
-            if (vs14Common && pathExistsAsFile(path.join(vs14Common, '..\\IDE\\CommonExtensions\\Microsoft\\TestWindow\\TE.TestModes.dll'))) {
-                setRegistryKeyForParallelExecution(vsVersion);
-                return;
-            }
-        }
-    }
-}
-
-function resetRunInParallel() {
-    tl.warning(tl.loc('UpdateOneOrHigherRequired'));
-    runInParallel = false;
-}
-
-
-function getLatestVSTestConsolePathFromRegistry(): Q.Promise<ExecutabaleInfo> {
-    const deferred = Q.defer<ExecutabaleInfo>();
-    const regPath = 'HKLM\\SOFTWARE\\Microsoft\\VisualStudio';
-    regedit.list(regPath).on('data', (entry) => {
-        const subkeys = entry.data.keys;
-        const versions = getFloatsFromStringArray(subkeys);
-        if (versions && versions.length > 0) {
-            versions.sort((a, b) => a - b);
-            const selectedVersion = versions[versions.length - 1];
-            tl.debug('Registry entry found. Selected version is ' + selectedVersion.toString());
-            deferred.resolve({version: selectedVersion, location: getVSTestLocation(selectedVersion)});
-        } else {
-            deferred.resolve(null);
-        }
-    }).on('error', () => {
-        tl.debug('Registry entry not found under VisualStudio node');
-        deferred.resolve(null);
-    });
-    return deferred.promise;
-}
-
-function getVSTestConsole15Path(): string {
-    const powershellTool = tl.tool('powershell');
-    const powershellArgs = ['-file', vs15HelperPath]
-    powershellTool.arg(powershellArgs);
-    const xml = powershellTool.execSync().stdout;
-    const deferred = Q.defer<string>();
-    let vstestconsolePath: string = null;
-    xml2js.parseString(xml, (err, result) => {
-        if (result) {
-            try {
-                const vs15InstallDir = result['Objs']['S'][0];
-                vstestconsolePath = path.join(vs15InstallDir, 'Common7', 'IDE', 'CommonExtensions', 'Microsoft', 'TestWindow', 'vstest.console.exe');
-            } catch (e) {
-                tl.debug('Unable to read Visual Studio 2017 installation path');
-                tl.debug(e);
-                vstestconsolePath = null;
-            }
-        }
-    })
-    return vstestconsolePath;
-}
-
-
-function locateVSVersion(version: string): Q.Promise<ExecutabaleInfo> {
-    const deferred = Q.defer<ExecutabaleInfo>();
-    const vsVersion: number = parseFloat(version);
-    
-    if (isNaN(vsVersion) || vsVersion === 15) {
-        // latest
-        tl.debug('Searching for latest Visual Studio');
-        const vstestconsole15Path = getVSTestConsole15Path();
-        if (vstestconsole15Path) {
-            deferred.resolve({version: 15, location: vstestconsole15Path});
-        } else {
-            // fallback
-            tl.debug('Unable to find an instance of Visual Studio 2017');
-            return getLatestVSTestConsolePathFromRegistry();
-        }
-    } else {
-        tl.debug('Searching for Visual Studio ' + vsVersion.toString());
-        deferred.resolve({version: vsVersion, location: getVSTestLocation(vsVersion)});
-    }
-    return deferred.promise;
-}
-
-function getFloatsFromStringArray(inputArray: string[]): number[] {
-    const outputArray: number[] = [];
-    let count;
-    if (inputArray) {
-        for (count = 0; count < inputArray.length; count++) {
-            const floatValue = parseFloat(inputArray[count]);
-            if (!isNaN(floatValue)) {
-                outputArray.push(floatValue);
-            }
-        }
-    }
-    return outputArray;
-}
-
-function setRegistryKeyForParallelExecution(vsVersion: number) {
-    const regKey = 'HKCU\\SOFTWARE\\Microsoft\\VisualStudio\\' + vsVersion.toFixed(1) + '_Config\\FeatureFlags\\TestingTools\\UnitTesting\\Taef';
-    regedit.createKey(regKey, function(err) {
-        if (!err) {
-            const values = {
-                [regKey]: {
-                    'Value': {
-                        value: '1',
-                        type: 'REG_DWORD'
-                    }
-                }
-            };
-            regedit.putValue(values, function(err) {
-                if (err) {
-                    tl.warning(tl.loc('ErrorOccuredWhileSettingRegistry', err));
-                }
-            });
-        } else {
-            tl.warning(tl.loc('ErrorOccuredWhileSettingRegistry', err));
-        }
-    });
-}
-
-function readFileContents(filePath: string, encoding: string): Q.Promise<string> {
-    const defer = Q.defer<string>();
-
-    fs.readFile(filePath, encoding, (err, data) => {
-        if (err) {
-            defer.reject(new Error('Could not read file (' + filePath + '): ' + err.message));
-        }
-        else {
-            defer.resolve(data);
-        }
-    });
-
-    return defer.promise;
-}
-
-function pathExistsAsFile(path: string) {
-    return tl.exist(path) && tl.stats(path).isFile();
-}
-
-function pathExistsAsDirectory(path: string) {
-    return tl.exist(path) && tl.stats(path).isDirectory();
-}
-
-function isEmptyResponseFile(responseFile: string): boolean {
-    if (pathExistsAsFile(responseFile) && tl.stats(responseFile).size) {
-        return false;
-    }
-    return true;
-}
-
-function isTiaAllowed(): boolean {
-    if (tiaEnabled && getTestSelectorLocation()) {
-        return true;
-    }
-    return false;
-}
-
-function getTIALevel() {
-    if (fileLevel && fileLevel.toUpperCase() === 'FALSE') {
-        return 'method';
-    }
-    return 'file';
-}
-
-function responseContainsNoTests(filePath: string): Q.Promise<boolean> {
-    return readFileContents(filePath, 'utf-8').then(function(resp) {
-        if (resp === '/Tests:') {
-            return true;
-        }
-        else {
-            return false;
-        }
-    });
-}
-
-function isNullOrWhitespace(input) {
-    if (typeof input === 'undefined' || input === null) {
-        return true;
-    }
-    return input.replace(/\s/g, '').length < 1;
-}
