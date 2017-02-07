@@ -3,7 +3,7 @@
   "loc.helpMarkDown": "Attiva un test di carico basato sul cloud con Visual Studio Team Services. [Altre informazioni](https://go.microsoft.com/fwlink/?linkid=613203).",
   "loc.description": "Consente di eseguire un test prestazioni Web rapido nel cloud con Visual Studio Team Services",
   "loc.instanceNameFormat": "Test prestazioni Web rapido $(testName)",
-  "loc.input.label.connectedServiceName": "Connessione registrata",
+  "loc.input.label.connectedServiceName": "VS Team Services Connection",
   "loc.input.help.connectedServiceName": "Consente di selezionare una connessione al servizio registrata in precedenza per comunicare con il servizio del test di carico basato sul cloud. Scegliere 'Gestisci' per registrare una nuova connessione.",
   "loc.input.label.websiteUrl": "URL del sito Web",
   "loc.input.help.websiteUrl": "Immettere l'URL del sito Web dell'applicazione nel formato http://www.app.utente/home.html",
@@ -15,5 +15,7 @@
   "loc.input.help.runDuration": "Durata dell'esecuzione dei test di carico espressa in secondi.",
   "loc.input.label.geoLocation": "Località di carico",
   "loc.input.help.geoLocation": "Area geografica da cui generare il carico. Per altri dettagli, vedere la Guida.",
-  "loc.input.label.machineType": "Esegui test di carico con"
+  "loc.input.label.machineType": "Esegui test di carico con",
+  "loc.input.label.avgResponseTimeThreshold": "Fail test if Avg.Response Time(ms) exceeds",
+  "loc.input.help.avgResponseTimeThreshold": "Load test run duration in seconds."
 }

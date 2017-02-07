@@ -1,14 +1,14 @@
 {
-  "loc.friendlyName": "部署 SQL Dacpac 计算机组(预览)",
+  "loc.friendlyName": "SQL Deploy on Machine Group (Preview)",
   "loc.helpMarkDown": "[详细信息](https://aka.ms/sqldacpacmachinegroupreadme)",
   "loc.description": "使用 sqlpackage.exe 或 Invoke-Sqlcmd 部署 DB",
   "loc.instanceNameFormat": "使用以下方式部署: $(TaskType)",
   "loc.input.label.TaskType": "使用以下方式部署 SQL",
   "loc.input.help.TaskType": "指定要部署 DB 的方式，即使用 Dacpac，还是使用 SQL 脚本。",
   "loc.input.label.DacpacFile": "DACPAC 文件",
-  "loc.input.help.DacpacFile": "目标计算机或 UNC 路径上的 DACPAC 文件的位置，例如 \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.dacpac。应可通过 UNC 路径访问计算机的管理员帐户。此外还支持环境变量，例如 $env:windir、$env:systemroot、$env:windir\\FabrikamFibre\\DB。",
+  "loc.input.help.DacpacFile": "Location of the DACPAC file on the target machines or on a UNC path like, \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.dacpac. The UNC path should be accessible to the machine's administrator account. Environment variables are also supported, like $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB. Wildcards can be used. For example, `**/*.dacpac` for DACPAC file present in all sub folders.",
   "loc.input.label.SqlFile": "SQL 文件",
-  "loc.input.help.SqlFile": "目标计算机或 UNC 路径上的 SQL 文件的位置，例如 \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.sql。可通过 UNC 路径访问计算机管理员帐户。此外还支持环境变量，例如 $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB。",
+  "loc.input.help.SqlFile": "Location of the SQL file on the target machines or on a UNC path like, \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.sql. The UNC path should be accessible to the machine's administrator account. Environment variables are also supported, like $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB. Wildcards can be used. For example, `**/*.sql` for sql file present in all sub folders.",
   "loc.input.label.InlineSql": "内联 SQL",
   "loc.input.help.InlineSql": "SQL 查询内联",
   "loc.input.label.TargetMethod": "使用以下方法指定 SQL:",
@@ -32,5 +32,7 @@
   "loc.messages.SQLPowershellModuleisnotinstalledonyouragentmachine": "代理计算机上未安装 SQL Powershell 模块。请按照以下步骤执行此任务",
   "loc.messages.InstallPowershellToolsharedManagementObjectsdependency": "1. 安装 PowershellTools 和 SharedManagementObjects(依赖项)，网址为 https://www.microsoft.com/zh-cn/download/details.aspx?id=52676 (2016)",
   "loc.messages.RestartagentmachineafterinstallingtoolstoregisterModulepathupdates": "2. 安装工具后重启代理计算机以注册模块路径更新",
-  "loc.messages.RunImportModuleSQLPSonyouragentPowershellprompt": "3. 代理 Powershell 提示时运行导入模块 SQLPS。(对于已启用 Powershell 3.0 的计算机，无需执行此步骤)"
+  "loc.messages.RunImportModuleSQLPSonyouragentPowershellprompt": "3. 代理 Powershell 提示时运行导入模块 SQLPS。(对于已启用 Powershell 3.0 的计算机，无需执行此步骤)",
+  "loc.messages.Nofileswerefoundtodeploywithsearchpattern0": "No files were found to deploy with search pattern {0}",
+  "loc.messages.Foundmorethanonefiletodeploywithsearchpattern0Therecanbeonlyone": "Found more than one file to deploy with search pattern {0}. There can be only one."
 }

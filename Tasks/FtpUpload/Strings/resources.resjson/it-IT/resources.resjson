@@ -26,6 +26,6 @@
   "loc.messages.UploadSucceedMsg": "Caricamento FTP riuscito: %s",
   "loc.messages.UploadSucceedRes": "Caricamento FTP riuscito",
   "loc.messages.DisconnectHost": "disconnessione da: %s",
-  "loc.messages.Disconnected": "disconnected",
+  "loc.messages.Disconnected": "disconnesso",
   "loc.messages.ConnectPort": "connessione a: %s:%s"
 }

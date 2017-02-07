@@ -1,14 +1,14 @@
 {
-  "loc.friendlyName": "Déployer le groupe d'ordinateurs SQL Dacpac (version préliminaire)",
+  "loc.friendlyName": "SQL Deploy on Machine Group (Preview)",
   "loc.helpMarkDown": "[Plus d'informations](https://aka.ms/sqldacpacmachinegroupreadme)",
   "loc.description": "Déployer la base de données à l'aide de sqlpackage.exe ou Invoke-Sqlcmd",
   "loc.instanceNameFormat": "Déployer à l'aide de : $(TaskType)",
   "loc.input.label.TaskType": "Déployer SQL à l'aide de",
   "loc.input.help.TaskType": "Spécifiez la façon dont vous voulez déployer la base de données : à l'aide de Dacpac ou d'un script SQL.",
   "loc.input.label.DacpacFile": "Fichier DACPAC",
-  "loc.input.help.DacpacFile": "Emplacement du fichier DACPAC sur les ordinateurs cibles ou sur un chemin d'accès UNC, par exemple \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.dacpac. Le chemin d'accès UNC doit être accessible par le compte Administrateur de l'ordinateur. Les variables d'environnement sont également prises en charge, comme $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB.",
+  "loc.input.help.DacpacFile": "Location of the DACPAC file on the target machines or on a UNC path like, \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.dacpac. The UNC path should be accessible to the machine's administrator account. Environment variables are also supported, like $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB. Wildcards can be used. For example, `**/*.dacpac` for DACPAC file present in all sub folders.",
   "loc.input.label.SqlFile": "Fichier SQL",
-  "loc.input.help.SqlFile": "Emplacement du fichier SQL sur les ordinateurs cibles ou sur un chemin d'accès UNC, par exemple \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.sql. Le chemin d'accès UNC doit être accessible par le compte Administrateur de l'ordinateur. Les variables d'environnement sont également prises en charge, comme $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB.",
+  "loc.input.help.SqlFile": "Location of the SQL file on the target machines or on a UNC path like, \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.sql. The UNC path should be accessible to the machine's administrator account. Environment variables are also supported, like $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB. Wildcards can be used. For example, `**/*.sql` for sql file present in all sub folders.",
   "loc.input.label.InlineSql": "SQL inclus",
   "loc.input.help.InlineSql": "Requêtes SQL incluses",
   "loc.input.label.TargetMethod": "Spécifier l'utilisation de SQL",
@@ -32,5 +32,7 @@
   "loc.messages.SQLPowershellModuleisnotinstalledonyouragentmachine": "Le module PowerShell SQL n'est pas installé sur votre ordinateur agent. Suivez les étapes indiquées ci-dessous pour exécuter cette tâche",
   "loc.messages.InstallPowershellToolsharedManagementObjectsdependency": "1. Installez PowershellTools & SharedManagementObjects(dependency), à partir de la page https://www.microsoft.com/en-us/download/details.aspx?id=52676 (2016)",
   "loc.messages.RestartagentmachineafterinstallingtoolstoregisterModulepathupdates": "2. Redémarrez l'ordinateur agent après l'installation des outils pour inscrire les mises à jour du chemin d'accès au module",
-  "loc.messages.RunImportModuleSQLPSonyouragentPowershellprompt": "3. Exécutez Import-Module SQLPS sur l'invite Powershell de votre agent. Cette étape n'est pas requise sur les ordinateurs Powershell 3.0"
+  "loc.messages.RunImportModuleSQLPSonyouragentPowershellprompt": "3. Exécutez Import-Module SQLPS sur l'invite Powershell de votre agent. Cette étape n'est pas requise sur les ordinateurs Powershell 3.0",
+  "loc.messages.Nofileswerefoundtodeploywithsearchpattern0": "No files were found to deploy with search pattern {0}",
+  "loc.messages.Foundmorethanonefiletodeploywithsearchpattern0Therecanbeonlyone": "Found more than one file to deploy with search pattern {0}. There can be only one."
 }

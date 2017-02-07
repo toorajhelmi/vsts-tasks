@@ -1,14 +1,14 @@
 {
-  "loc.friendlyName": "部署 SQL Dacpac 電腦群組 (預覽)",
+  "loc.friendlyName": "SQL Deploy on Machine Group (Preview)",
   "loc.helpMarkDown": "[詳細資訊](https://aka.ms/sqldacpacmachinegroupreadme)",
   "loc.description": "使用 sqlpackage.exe 或 Invoke-Sqlcmd 部署 DB",
   "loc.instanceNameFormat": "使用下項進行部署: $(TaskType)",
   "loc.input.label.TaskType": "使用下項部署 SQL:",
   "loc.input.help.TaskType": "指定您想要的 DB 部署方式: 使用 Dacpac 或使用 SQL 指令碼。",
   "loc.input.label.DacpacFile": "DACPAC 檔案",
-  "loc.input.help.DacpacFile": "DACPAC 檔案在目標電腦或 UNC 路徑上的位置，例如 \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.dacpac。電腦的 Administrator 帳戶應可存取 UNC 路徑。環境變數亦受支援，例如 $env:windir、$env:systemroot、$env:windir\\FabrikamFibre\\DB。",
+  "loc.input.help.DacpacFile": "Location of the DACPAC file on the target machines or on a UNC path like, \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.dacpac. The UNC path should be accessible to the machine's administrator account. Environment variables are also supported, like $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB. Wildcards can be used. For example, `**/*.dacpac` for DACPAC file present in all sub folders.",
   "loc.input.label.SqlFile": "SQL 檔案",
-  "loc.input.help.SqlFile": "SQL 檔案在目標電腦或 UNC 路徑上的位置，例如 \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.sql。電腦的 Administrator 帳戶應可存取 UNC 路徑。環境變數亦受支援，例如 $env:windir、$env:systemroot、$env:windir\\FabrikamFibre\\DB。",
+  "loc.input.help.SqlFile": "Location of the SQL file on the target machines or on a UNC path like, \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.sql. The UNC path should be accessible to the machine's administrator account. Environment variables are also supported, like $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB. Wildcards can be used. For example, `**/*.sql` for sql file present in all sub folders.",
   "loc.input.label.InlineSql": "內嵌 SQL",
   "loc.input.help.InlineSql": "SQL 查詢內嵌",
   "loc.input.label.TargetMethod": "使用下列項目指定 SQL:",
@@ -32,5 +32,7 @@
   "loc.messages.SQLPowershellModuleisnotinstalledonyouragentmachine": "您的代理程式電腦上未安裝 SQL PowerShell 模組。請依照下方所列步驟執行此工作",
   "loc.messages.InstallPowershellToolsharedManagementObjectsdependency": "1. 安裝 PowershellTools 及 SharedManagementObjects (相依性)，網址為 https://www.microsoft.com/zh-tw/download/details.aspx?id=52676 (2016)",
   "loc.messages.RestartagentmachineafterinstallingtoolstoregisterModulepathupdates": "2. 安裝工具後重新啟動代理程式電腦以註冊模組路徑更新",
-  "loc.messages.RunImportModuleSQLPSonyouragentPowershellprompt": "3. 在您的代理程式 PowerShell 提示字元上執行 Import-Module SQLPS。(啟用 PowerShell 3.0 的電腦不需要此步驟)"
+  "loc.messages.RunImportModuleSQLPSonyouragentPowershellprompt": "3. 在您的代理程式 PowerShell 提示字元上執行 Import-Module SQLPS。(啟用 PowerShell 3.0 的電腦不需要此步驟)",
+  "loc.messages.Nofileswerefoundtodeploywithsearchpattern0": "No files were found to deploy with search pattern {0}",
+  "loc.messages.Foundmorethanonefiletodeploywithsearchpattern0Therecanbeonlyone": "Found more than one file to deploy with search pattern {0}. There can be only one."
 }

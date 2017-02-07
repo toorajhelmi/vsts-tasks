@@ -1,14 +1,14 @@
 {
-  "loc.friendlyName": "SQL Dacpac コンピューター グループの配置 (プレビュー)",
+  "loc.friendlyName": "SQL Deploy on Machine Group (Preview)",
   "loc.helpMarkDown": "[詳細情報](https://aka.ms/sqldacpacmachinegroupreadme)",
   "loc.description": "sqlpackage.exe または Invoke-Sqlcmd を使用して DB を配置します",
   "loc.instanceNameFormat": "配置時に次を使用: $(TaskType)",
   "loc.input.label.TaskType": "SQL の配置時に使用 ",
   "loc.input.help.TaskType": "DB を配置する方法を、Dacpac を使用するか SQL スクリプトを使用するように指定します。",
   "loc.input.label.DacpacFile": "DACPAC ファイル",
-  "loc.input.help.DacpacFile": "対象のコンピューターまたは UNC パス上の DACPAC ファイルの場所 (\\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.dacpac など)。この UNC パスはコンピューターの Administrator アカウントでアクセスできる必要があります。また、環境変数 ($env:windir、$env:systemroot、$env:windir\\FabrikamFibre\\DB など) もサポートされます。",
+  "loc.input.help.DacpacFile": "Location of the DACPAC file on the target machines or on a UNC path like, \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.dacpac. The UNC path should be accessible to the machine's administrator account. Environment variables are also supported, like $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB. Wildcards can be used. For example, `**/*.dacpac` for DACPAC file present in all sub folders.",
   "loc.input.label.SqlFile": "SQL ファイル",
-  "loc.input.help.SqlFile": "対象のコンピューターまたは UNC パス上の SQL ファイルの場所 (\\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.sql など)。この UNC パスはコンピューターの Administrator アカウントでアクセスできる必要があります。また、環境変数 ($env:windir、$env:systemroot、$env:windir\\FabrikamFibre\\DB など) もサポートされます。",
+  "loc.input.help.SqlFile": "Location of the SQL file on the target machines or on a UNC path like, \\\\\\\\BudgetIT\\Web\\Deploy\\FabrikamDB.sql. The UNC path should be accessible to the machine's administrator account. Environment variables are also supported, like $env:windir, $env:systemroot, $env:windir\\FabrikamFibre\\DB. Wildcards can be used. For example, `**/*.sql` for sql file present in all sub folders.",
   "loc.input.label.InlineSql": "インライン SQL",
   "loc.input.help.InlineSql": "SQL クエリ インライン",
   "loc.input.label.TargetMethod": "次を使用して、SQL を指定します",
@@ -32,5 +32,7 @@
   "loc.messages.SQLPowershellModuleisnotinstalledonyouragentmachine": "エージェント コンピューターで SQL PowerShell モジュールがインストールされていません。このタスクを実行するには、下記のステップに従ってください",
   "loc.messages.InstallPowershellToolsharedManagementObjectsdependency": "1. https://www.microsoft.com/ja-jp/download/details.aspx?id=52676 から PowershellTools と SharedManagementObjects (依存関係) をインストールします (2016)",
   "loc.messages.RestartagentmachineafterinstallingtoolstoregisterModulepathupdates": "2. ツールをインストールしてモジュール パスの更新を登録した後で、エージェント コンピューターを再起動します",
-  "loc.messages.RunImportModuleSQLPSonyouragentPowershellprompt": "3. エージェント Powershell プロンプトで Import-Module SQLPS を実行します。(Powershell 3.0 が使用可能なコンピューターでは、このステップは必須ではありません)"
+  "loc.messages.RunImportModuleSQLPSonyouragentPowershellprompt": "3. エージェント Powershell プロンプトで Import-Module SQLPS を実行します。(Powershell 3.0 が使用可能なコンピューターでは、このステップは必須ではありません)",
+  "loc.messages.Nofileswerefoundtodeploywithsearchpattern0": "No files were found to deploy with search pattern {0}",
+  "loc.messages.Foundmorethanonefiletodeploywithsearchpattern0Therecanbeonlyone": "Found more than one file to deploy with search pattern {0}. There can be only one."
 }
