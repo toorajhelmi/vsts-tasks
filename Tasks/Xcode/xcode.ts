@@ -134,6 +134,7 @@ async function run() {
                 xcode_otherCodeSignFlags = 'OTHER_CODE_SIGN_FLAGS=--keychain=' + keychain;
                 xcb.arg(xcode_otherCodeSignFlags);
                 keychainToDelete = keychain;
+                tl.setVariable('XCODE_KEYCHAIN_TO_DELETE', keychainToDelete);
 
                 //find signing identity
                 var signIdentity = await sign.findSigningIdentity(keychain);
@@ -150,6 +151,7 @@ async function run() {
                 }
                 if (removeProfile && provProfileUUID) {
                     profileToDelete = provProfileUUID;
+                    tl.setVariable('XCODE_PROFILE_TO_DELETE', profileToDelete);
                 }
             }
 
