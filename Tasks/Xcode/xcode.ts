@@ -11,7 +11,10 @@ async function run() {
         //--------------------------------------------------------
         // Tooling
         //--------------------------------------------------------
-        tl.setEnvVar('DEVELOPER_DIR', tl.getInput('xcodeDeveloperDir', false));
+        var devDir = tl.getInput('xcodeDeveloperDir', false);
+        if (devDir) {
+            tl.setVariable('DEVELOPER_DIR', devDir);
+        }
 
         var useXctool: boolean = tl.getBoolInput('useXctool', false);
         var tool: string = useXctool ? tl.which('xctool', true) : tl.which('xcodebuild', true);
@@ -31,7 +34,7 @@ async function run() {
         //--------------------------------------------------------
         var ws: string = tl.getPathInput('xcWorkspacePath', false, false);
         if (tl.filePathSupplied('xcWorkspacePath')) {
-            var workspaceMatches = tl.glob(ws);
+            var workspaceMatches = tl.findMatch(workingDir, ws);
             tl.debug("Found " + workspaceMatches.length + ' workspaces matching.');
 
             if (workspaceMatches.length > 0) {
@@ -134,7 +137,7 @@ async function run() {
                 xcode_otherCodeSignFlags = 'OTHER_CODE_SIGN_FLAGS=--keychain=' + keychain;
                 xcb.arg(xcode_otherCodeSignFlags);
                 keychainToDelete = keychain;
-                tl.setVariable('XCODE_KEYCHAIN_TO_DELETE', keychainToDelete);
+                tl.setVariable('XCODE_KEYCHAIN_TO_DELETE', keychainToDelete); //switch to setTaskVariable when new version of lib is published
 
                 //find signing identity
                 var signIdentity = await sign.findSigningIdentity(keychain);
@@ -151,7 +154,7 @@ async function run() {
                 }
                 if (removeProfile && provProfileUUID) {
                     profileToDelete = provProfileUUID;
-                    tl.setVariable('XCODE_PROFILE_TO_DELETE', profileToDelete);
+                    tl.setVariable('XCODE_PROFILE_TO_DELETE', profileToDelete); //switch to setTaskVariable when new version of lib is published
                 }
             }
 
@@ -225,8 +228,7 @@ async function run() {
                 //check for pattern in testResultsFiles
                 if (testResultsFiles.indexOf('*') >= 0 || testResultsFiles.indexOf('?') >= 0) {
                     tl.debug('Pattern found in testResultsFiles parameter');
-                    var allFiles: string[] = tl.find(workingDir);
-                    var matchingTestResultsFiles: string[] = tl.match(allFiles, testResultsFiles, { matchBase: true });
+                    var matchingTestResultsFiles: string[] = tl.findMatch(workingDir, testResultsFiles, null, { matchBase: true });
                 }
                 else {
                     tl.debug('No pattern found in testResultsFiles parameter');
@@ -267,7 +269,7 @@ async function run() {
                 tl.debug('Packaging apps using xcrun.');
                 var buildOutputPath: string = tl.resolve(outPath, 'build.sym');
                 tl.debug('buildOutputPath: ' + buildOutputPath);
-                var appFolders: string[] = tl.glob(buildOutputPath + '/**/*.app');
+                var appFolders: string[] = tl.findMatch(buildOutputPath, '**/*.app');
                 if (appFolders) {
                     tl.debug(appFolders.length + ' apps found for packaging.');
                     var xcrunPath: string = tl.which('xcrun', true);
@@ -324,7 +326,7 @@ async function run() {
                 }
                 await xcodeArchive.exec();
 
-                var archiveFolders: string[] = tl.glob(archiveFolderRoot + '/**/*.xcarchive');
+                var archiveFolders: string[] = tl.findMatch(archiveFolderRoot, '**/*.xcarchive');
                 if (archiveFolders && archiveFolders.length > 0) {
                     tl.debug(archiveFolders.length + ' archives found for exporting.');
 
@@ -338,7 +340,7 @@ async function run() {
                         // Automatically try to detect the export-method to use from the provisioning profile
                         // embedded in the .xcarchive file
                         var archiveToCheck: string = archiveFolders[0];
-                        var embeddedProvProfile: string[] = tl.glob(archiveToCheck + '/**/embedded.mobileprovision');
+                        var embeddedProvProfile: string[] = tl.findMatch(archiveToCheck, '**/embedded.mobileprovision');
                         if (embeddedProvProfile && embeddedProvProfile.length > 0) {
                             tl.debug('embedded prov profile = ' + embeddedProvProfile);
                             exportMethod = await sign.getProvisioningProfileType(embeddedProvProfile[0]);
