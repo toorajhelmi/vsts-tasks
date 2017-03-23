@@ -5,6 +5,7 @@ import * as taskLib from 'vsts-task-lib/task';
 import * as restm from 'typed-rest-client/RestClient';
 import * as os from 'os';
 import * as path from 'path';
+import * as fs from 'fs';
 
 let osPlat: string = os.platform();
 let osArch: string = os.arch();
@@ -17,7 +18,7 @@ async function run() {
         await getNode(versionSpec, onlyLTS);
     }
     catch (error) {
-        console.error('ERR:' + error.message);
+        taskLib.setResult(taskLib.TaskResult.Failed, error.message);
     }
 }
 
@@ -65,7 +66,7 @@ async function getNode(versionSpec: string, onlyLTS: boolean) {
         //
         if (toolLib.isExplicitVersion(versionSpec)) {
             // given exact version to get
-            toolLib.debug('explicit match', versionSpec);
+            toolLib.debug('explicit match ' + versionSpec);
             version = versionSpec;
         }
         else {
@@ -78,6 +79,7 @@ async function getNode(versionSpec: string, onlyLTS: boolean) {
                 case "linux": dataFileName = "linux-" + osArch; break;
                 case "darwin": dataFileName = "osx-" + osArch + '-tar'; break;
                 case "win32": dataFileName = "win-" + osArch; break;
+                default: throw new Error(`Unexpected OS '${osPlat}'`);
             }
 
             let dataUrl = "https://nodejs.org/dist/index.json";
@@ -103,7 +105,11 @@ async function getNode(versionSpec: string, onlyLTS: boolean) {
             // get the latest version that matches the version spec
             //
             version = toolLib.evaluateVersions(versions, versionSpec);
-            toolLib.debug('version from index.json', version);
+            if (!version) {
+                //throw new Error(`Unable to find Node version '${versionSpec}' for platform ${osPlat} and architecture ${osArch}.`);
+            }
+
+            toolLib.debug('version from index.json ' + version);
             toolLib.debug('isLTS:' + ltsMap[version]);
         }
 
@@ -125,7 +131,13 @@ async function getNode(versionSpec: string, onlyLTS: boolean) {
         //
         // Extract the tar and install it into the local tool cache
         //
-        let extPath = await toolLib.extractTar(downloadPath);
+        let extPath;
+        if (osPlat == 'win32') {
+            extPath = await toolLib.extractZip(downloadPath);
+        }
+        else {
+            extPath = await toolLib.extractTar(downloadPath);
+        }
 
         // node extracts with a root folder that matches the fileName downloaded
         let toolRoot = path.join(extPath, fileName);
