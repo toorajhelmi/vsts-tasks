@@ -9,7 +9,7 @@ async function run() {
         tl.setResourcePath(path.join(__dirname, 'task.json'));
 
         //clean up the temporary keychain, so it is not used to search for code signing identity in future builds
-        var keychainToDelete = tl.getVariable('XCODE_KEYCHAIN_TO_DELETE');
+        var keychainToDelete = tl.getTaskVariable('XCODE_KEYCHAIN_TO_DELETE');
         if (keychainToDelete) {
             try {
                 await sign.deleteKeychain(keychainToDelete);
@@ -20,7 +20,7 @@ async function run() {
         }
 
         //delete provisioning profile if specified
-        var profileToDelete = tl.getVariable('XCODE_PROFILE_TO_DELETE');
+        var profileToDelete = tl.getTaskVariable('XCODE_PROFILE_TO_DELETE');
         if (profileToDelete) {
             try {
                 await sign.deleteProvisioningProfile(profileToDelete);
