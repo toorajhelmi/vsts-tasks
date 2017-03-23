@@ -42,6 +42,7 @@
         "NuGetInstaller",
         "NugetPackager",
         "NuGetPublisher",
+        "PackageDownloader",
         "powerShell",
         "PowerShellOnTargetMachines",
         "PublishBuildArtifacts",
