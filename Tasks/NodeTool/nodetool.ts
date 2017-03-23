@@ -78,7 +78,7 @@ async function getNode(versionSpec: string, onlyLTS: boolean) {
             switch (osPlat) {
                 case "linux": dataFileName = "linux-" + osArch; break;
                 case "darwin": dataFileName = "osx-" + osArch + '-tar'; break;
-                case "win32": dataFileName = "win-" + osArch; break;
+                case "win32": dataFileName = "win-" + osArch + '-exe'; break;
                 default: throw new Error(`Unexpected OS '${osPlat}'`);
             }
 
@@ -106,7 +106,7 @@ async function getNode(versionSpec: string, onlyLTS: boolean) {
             //
             version = toolLib.evaluateVersions(versions, versionSpec);
             if (!version) {
-                //throw new Error(`Unable to find Node version '${versionSpec}' for platform ${osPlat} and architecture ${osArch}.`);
+                throw new Error(`Unable to find Node version '${versionSpec}' for platform ${osPlat} and architecture ${osArch}.`);
             }
 
             toolLib.debug('version from index.json ' + version);
@@ -133,7 +133,7 @@ async function getNode(versionSpec: string, onlyLTS: boolean) {
         //
         let extPath;
         if (osPlat == 'win32') {
-            extPath = await toolLib.extractZip(downloadPath);
+            extPath = await toolLib.extract7z(downloadPath);
         }
         else {
             extPath = await toolLib.extractTar(downloadPath);
