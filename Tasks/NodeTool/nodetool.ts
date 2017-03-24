@@ -131,9 +131,16 @@ async function getNode(versionSpec: string, onlyLTS: boolean) {
         //
         // Extract the tar and install it into the local tool cache
         //
-        let extPath;
+        let extPath: string;
         if (osPlat == 'win32') {
-            extPath = await toolLib.extract7z(downloadPath);
+            taskLib.assertAgent('2.115.0');
+            extPath = taskLib.getVariable('Agent.TempDirectory');
+            if (!extPath) {
+                throw new Error('Expected Agent.TempDirectory to be set');
+            }
+
+            extPath = path.join(extPath, 'n'); // use as short a path as possible due to nested node_modules folders
+            extPath = await toolLib.extract7z(downloadPath, extPath);
         }
         else {
             extPath = await toolLib.extractTar(downloadPath);
@@ -149,11 +156,14 @@ async function getNode(versionSpec: string, onlyLTS: boolean) {
 
     //
     // a tool installer initimately knows details about the layout of that tool
-    // for example, node binary is in the bin folder after the extract.
+    // for example, node binary is in the bin folder after the extract on Mac/Linux.
     // layouts could change by version, by platform etc... but that's the tool installers job
-    //    
-    let toolPath: string = toolLib.findLocalTool('node', version);    
-    toolPath = path.join(toolPath, 'bin');
+    //
+    let toolPath: string = toolLib.findLocalTool('node', version);
+    if (osPlat != 'win32') {
+        toolPath = path.join(toolPath, 'bin');
+    }
+
     console.log('using tool path: ' + toolPath);
 
     //
